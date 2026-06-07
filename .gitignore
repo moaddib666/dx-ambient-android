@@ -30,3 +30,6 @@ local.properties
 
 # Logs
 *.log
+
+# Working scratch / source assets staged for import
+tmp/

@@ -163,6 +163,16 @@ private fun SceneCard(
  */
 @Composable
 private fun SceneThumbnail(scene: Scene, modifier: Modifier = Modifier) {
+    // Prefer an explicit preview image (e.g. the bundled campfire preview).
+    scene.thumbnailUri?.let { thumbnail ->
+        AsyncImage(
+            model = thumbnail,
+            contentDescription = scene.name,
+            contentScale = ContentScale.Crop,
+            modifier = modifier,
+        )
+        return
+    }
     val source = scene.videoSource
     when (source.type) {
         MediaSourceType.LOCAL_IMAGE -> {

@@ -1,11 +1,18 @@
 package com.dx.ambient.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.dx.ambient.boot.BootDecision
+import com.dx.ambient.boot.BootScreen
+import com.dx.ambient.boot.BootViewModel
 import com.dx.ambient.feature.library.LibraryScreen
 import com.dx.ambient.feature.scenes.HomeScreen
 import com.dx.ambient.feature.scenes.PlayerScreen
@@ -28,7 +35,30 @@ private const val DEMO_YOUTUBE_VIDEO_ID = ""
 fun AmbientNavHost() {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = Routes.HOME) {
+    NavHost(navController = navController, startDestination = Routes.BOOT) {
+        // Black splash: seed bundled defaults, then boot into the last scene or land on Home.
+        composable(Routes.BOOT) {
+            val bootViewModel: BootViewModel = hiltViewModel()
+            val decision by bootViewModel.decision.collectAsStateWithLifecycle()
+            BootScreen()
+            LaunchedEffect(decision) {
+                when (val d = decision) {
+                    BootDecision.Loading -> Unit
+                    BootDecision.OpenHome ->
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.BOOT) { inclusive = true }
+                        }
+                    is BootDecision.OpenScene -> {
+                        // Land on Home first so BACK from the player returns here, not exits.
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.BOOT) { inclusive = true }
+                        }
+                        navController.navigate(Routes.player(d.sceneId))
+                    }
+                }
+            }
+        }
+
         composable(Routes.HOME) {
             HomeScreen(
                 onPlayScene = { sceneId -> navController.navigate(Routes.player(sceneId)) },

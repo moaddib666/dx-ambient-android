@@ -2,6 +2,9 @@ package com.dx.ambient.navigation
 
 /** Centralised navigation routes for the single-activity, Compose-Navigation app. */
 object Routes {
+    /** Start destination: black splash that seeds defaults and boots into the last scene. */
+    const val BOOT = "boot"
+
     const val HOME = "home"
 
     const val PLAYER = "player/{sceneId}"

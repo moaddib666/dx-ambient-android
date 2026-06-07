@@ -30,6 +30,7 @@ class SettingsRepositoryImpl @Inject constructor(
             prefs[Keys.SLEEP_TIMER] = updated.sleepTimerMinutes
             prefs[Keys.BURN_IN] = updated.burnInProtection
             prefs[Keys.RESUME_LAST] = updated.resumeLastSceneOnLaunch
+            prefs[Keys.DEFAULTS_SEEDED] = updated.defaultsSeeded
             updated.lastSceneId?.let { prefs[Keys.LAST_SCENE] = it } ?: prefs.remove(Keys.LAST_SCENE)
         }
     }
@@ -51,6 +52,7 @@ class SettingsRepositoryImpl @Inject constructor(
             burnInProtection = this[Keys.BURN_IN] ?: defaults.burnInProtection,
             resumeLastSceneOnLaunch = this[Keys.RESUME_LAST] ?: defaults.resumeLastSceneOnLaunch,
             lastSceneId = this[Keys.LAST_SCENE],
+            defaultsSeeded = this[Keys.DEFAULTS_SEEDED] ?: defaults.defaultsSeeded,
         )
     }
 
@@ -63,5 +65,6 @@ class SettingsRepositoryImpl @Inject constructor(
         val BURN_IN = booleanPreferencesKey("burn_in_protection")
         val RESUME_LAST = booleanPreferencesKey("resume_last_scene")
         val LAST_SCENE = stringPreferencesKey("last_scene_id")
+        val DEFAULTS_SEEDED = booleanPreferencesKey("defaults_seeded")
     }
 }

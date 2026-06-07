@@ -28,6 +28,9 @@ data class ProjectorSettings(
 
     /** Id of the scene to restore on launch, if any. */
     val lastSceneId: String? = null,
+
+    /** True once the app has seeded its bundled default scenes (e.g. Digital Campfire). */
+    val defaultsSeeded: Boolean = false,
 ) {
     val hasSleepTimer: Boolean get() = sleepTimerMinutes > 0
     val hasAutoDim: Boolean get() = dimAfterMinutes > 0

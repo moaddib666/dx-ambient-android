@@ -1,5 +1,7 @@
 package com.dx.ambient.rendering
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +17,7 @@ import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
 import coil.compose.AsyncImage
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
+import com.dx.ambient.domain.playback.PlaybackStatus
 import com.dx.ambient.playback.AmbientPlayer
 
 /**
@@ -40,6 +43,15 @@ fun AmbientStage(
 ) {
     val state by player.state.collectAsStateWithLifecycle()
     val brightness = state.currentBrightness
+
+    // Boot/scene-change fade: hold black until the picture is actually playing, then cross-fade
+    // the scene in. Combined with the black launch splash this gives a seamless "black → scene".
+    val revealed = state.status == PlaybackStatus.PLAYING
+    val coverAlpha by animateFloatAsState(
+        targetValue = if (revealed) 0f else 1f,
+        animationSpec = tween(durationMillis = 900),
+        label = "scene-reveal",
+    )
 
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
         when (scene.videoSource.type) {
@@ -80,6 +92,15 @@ fun AmbientStage(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = (1f - brightness).coerceIn(0f, 1f))),
+            )
+        }
+
+        // Reveal cover — fades from opaque black to transparent once playback starts.
+        if (coverAlpha > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = coverAlpha)),
             )
         }
     }

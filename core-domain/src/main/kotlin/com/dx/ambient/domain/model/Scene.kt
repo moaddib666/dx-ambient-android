@@ -40,6 +40,9 @@ data class Scene(
     /** True when audio playback is muted regardless of the chosen audio source. */
     val muted: Boolean = false,
 
+    /** Optional preview image (URI) shown on the home grid card; falls back to the video source. */
+    val thumbnailUri: String? = null,
+
     /** Ordering hint for the home/scene grid. */
     val sortOrder: Int = 0,
 
