@@ -1,5 +1,6 @@
 package com.dx.ambient.feature.scenes
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dx.ambient.domain.model.LibraryMedia
@@ -12,10 +13,12 @@ import com.dx.ambient.domain.repository.MediaLibraryRepository
 import com.dx.ambient.domain.repository.SceneRepository
 import com.dx.ambient.domain.usecase.SaveSceneUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -29,6 +32,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SceneEditorViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val sceneRepository: SceneRepository,
     mediaLibraryRepository: MediaLibraryRepository,
     private val saveScene: SaveSceneUseCase,
@@ -42,9 +46,24 @@ class SceneEditorViewModel @Inject constructor(
     val audios: StateFlow<List<LibraryMedia>> =
         mediaLibraryRepository.observeMedia(MediaKind.AUDIO).asState()
 
-    /** Pickable local images for the alpha mask (MVP feature 5). */
+    /** Pickable local images (imported from the library). */
     val images: StateFlow<List<LibraryMedia>> =
         mediaLibraryRepository.observeMedia(MediaKind.IMAGE).asState()
+
+    /** Masks the app ships with — drop PNG/WebP alpha masks in `assets/masks/` to add more. */
+    private val defaultMasks: List<LibraryMedia> = loadDefaultMasks()
+
+    /**
+     * Pickable masks (MVP feature 5): the bundled default masks first, then any images the user
+     * imported into their library, so either can be used as an alpha overlay.
+     */
+    val masks: StateFlow<List<LibraryMedia>> =
+        images.map { imported -> defaultMasks + imported }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = defaultMasks,
+            )
 
     private val _draft = MutableStateFlow(Scene(id = "", name = "New scene"))
 
@@ -138,4 +157,25 @@ class SceneEditorViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList(),
         )
+
+    /**
+     * Reads the bundled mask images from the `masks/` assets folder. To add masks, drop PNG or
+     * WebP files (alpha channel = the overlay) into `core-rendering/src/main/assets/masks/`.
+     */
+    private fun loadDefaultMasks(): List<LibraryMedia> = runCatching {
+        context.assets.list("masks").orEmpty()
+            .filter { it.endsWith(".webp", true) || it.endsWith(".png", true) }
+            .sorted()
+            .map { name ->
+                LibraryMedia(
+                    uri = "file:///android_asset/masks/$name",
+                    displayName = name.substringBeforeLast('.')
+                        .replace('_', ' ')
+                        .replaceFirstChar { it.uppercase() },
+                    mimeType = "image/*",
+                    kind = MediaKind.IMAGE,
+                    sourceTreeUri = "bundled:masks",
+                )
+            }
+    }.getOrDefault(emptyList())
 }

@@ -1,10 +1,13 @@
 package com.dx.ambient.feature.scenes
 
+import android.content.Context
 import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.LoopMode
 import com.dx.ambient.domain.model.MediaKind
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.usecase.SaveSceneUseCase
+import io.mockk.every
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -21,7 +24,14 @@ class SceneEditorViewModelTest {
 
     private val sceneRepo = FakeSceneRepository()
     private val mediaRepo = FakeMediaLibraryRepository()
-    private fun newViewModel() = SceneEditorViewModel(sceneRepo, mediaRepo, SaveSceneUseCase(sceneRepo))
+
+    // Context is only used to list bundled mask assets; a relaxed mock yields no default masks.
+    private val context = mockk<Context>(relaxed = true).also {
+        every { it.assets } returns mockk(relaxed = true)
+    }
+
+    private fun newViewModel() =
+        SceneEditorViewModel(context, sceneRepo, mediaRepo, SaveSceneUseCase(sceneRepo))
 
     @Test
     fun `bind null starts a fresh draft`() {

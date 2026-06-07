@@ -11,13 +11,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
@@ -51,12 +57,17 @@ fun SceneEditorScreen(
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val videos by viewModel.videos.collectAsStateWithLifecycle()
     val audios by viewModel.audios.collectAsStateWithLifecycle()
-    val images by viewModel.images.collectAsStateWithLifecycle()
+    val masks by viewModel.masks.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
 
-    androidx.compose.runtime.LaunchedEffect(sceneId) {
+    LaunchedEffect(sceneId) {
         viewModel.bind(sceneId)
     }
+
+    // Land initial focus on Save (not the name field) so the soft keyboard never auto-pops on
+    // entry; the user navigates up to a field and only then taps to type.
+    val saveFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { saveFocus.requestFocus() } }
 
     BackHandler { onDone() }
 
@@ -64,70 +75,90 @@ fun SceneEditorScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(ScreenPadding),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        SectionHeader(
-            title = if (sceneId.isNullOrBlank()) "New Scene" else "Edit Scene",
-        )
+        // Scrollable form content. Keeping this in a scroll container guarantees every field is
+        // reachable on any screen size; the Save/Cancel bar below stays pinned and always visible.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            SectionHeader(
+                title = if (sceneId.isNullOrBlank()) "New Scene" else "Edit Scene",
+            )
 
-        NameField(name = draft.name, onNameChange = viewModel::setName)
+            NameField(name = draft.name, onNameChange = viewModel::setName)
 
-        MediaPickerRow(
-            label = "Video source",
-            media = videos,
-            selectedUri = draft.videoSource.uri.takeIf {
-                draft.videoSource.type == MediaSourceType.LOCAL_VIDEO
-            },
-            onPick = viewModel::pickVideo,
-        )
+            MediaPickerRow(
+                label = "Video source",
+                media = videos,
+                selectedUri = draft.videoSource.uri.takeIf {
+                    draft.videoSource.type == MediaSourceType.LOCAL_VIDEO
+                },
+                onPick = viewModel::pickVideo,
+                emptyHint = "Import videos in Library to pick a picture source.",
+            )
 
-        MediaPickerRow(
-            label = "Audio source",
-            media = audios,
-            selectedUri = draft.audioSource.uri.takeIf {
-                draft.audioSource.type == MediaSourceType.LOCAL_AUDIO
-            },
-            onPick = viewModel::pickAudio,
-            clearLabel = "Use video's audio",
-            onClear = viewModel::clearAudio,
-        )
+            MediaPickerRow(
+                label = "Audio source",
+                media = audios,
+                selectedUri = draft.audioSource.uri.takeIf {
+                    draft.audioSource.type == MediaSourceType.LOCAL_AUDIO
+                },
+                onPick = viewModel::pickAudio,
+                clearLabel = "Use video's audio",
+                onClear = viewModel::clearAudio,
+            )
 
-        MediaPickerRow(
-            label = "Mask",
-            media = images,
-            selectedUri = draft.mask.uri.takeIf { draft.mask.enabled },
-            onPick = viewModel::pickMask,
-            clearLabel = "No mask",
-            onClear = viewModel::clearMask,
-        )
+            MediaPickerRow(
+                label = "Mask",
+                media = masks,
+                selectedUri = draft.mask.uri.takeIf { draft.mask.enabled },
+                onPick = viewModel::pickMask,
+                clearLabel = "No mask",
+                onClear = viewModel::clearMask,
+            )
 
-        BrightnessStepper(
-            brightness = draft.brightness,
-            onDecrease = { viewModel.setBrightness(draft.brightness - 0.05f) },
-            onIncrease = { viewModel.setBrightness(draft.brightness + 0.05f) },
-        )
+            BrightnessStepper(
+                brightness = draft.brightness,
+                onDecrease = { viewModel.setBrightness(draft.brightness - 0.05f) },
+                onIncrease = { viewModel.setBrightness(draft.brightness + 0.05f) },
+            )
 
-        ToggleRow(label = "Loop mode") {
-            PrimaryButton(text = loopModeLabel(draft), onClick = viewModel::cycleLoopMode)
+            ToggleRow(label = "Loop mode") {
+                PrimaryButton(text = loopModeLabel(draft), onClick = viewModel::cycleLoopMode)
+            }
+
+            ToggleRow(label = "Muted") {
+                PrimaryButton(
+                    text = if (draft.muted) "ON" else "OFF",
+                    onClick = viewModel::toggleMute,
+                )
+            }
+
+            error?.let { message ->
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
 
-        ToggleRow(label = "Muted") {
+        // Pinned action bar — always on screen so the scene can always be saved.
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+        ) {
             PrimaryButton(
-                text = if (draft.muted) "ON" else "OFF",
-                onClick = viewModel::toggleMute,
+                text = "Save",
+                onClick = { viewModel.save { onDone() } },
+                modifier = Modifier.focusRequester(saveFocus),
             )
-        }
-
-        error?.let { message ->
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 8.dp)) {
-            PrimaryButton(text = "Save", onClick = { viewModel.save { onDone() } })
             PrimaryButton(text = "Cancel", onClick = onDone)
         }
     }
@@ -170,25 +201,34 @@ private fun MediaPickerRow(
     onPick: (LibraryMedia) -> Unit,
     clearLabel: String? = null,
     onClear: (() -> Unit)? = null,
+    emptyHint: String? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(text = label, style = MaterialTheme.typography.titleMedium)
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (clearLabel != null && onClear != null) {
-                item {
+        if (media.isEmpty() && onClear == null && emptyHint != null) {
+            Text(
+                text = emptyHint,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        } else {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (clearLabel != null && onClear != null) {
+                    item {
+                        MediaChip(
+                            text = clearLabel,
+                            selected = selectedUri == null,
+                            onClick = onClear,
+                        )
+                    }
+                }
+                items(items = media, key = { it.uri }) { item ->
                     MediaChip(
-                        text = clearLabel,
-                        selected = selectedUri == null,
-                        onClick = onClear,
+                        text = item.displayName,
+                        selected = selectedUri == item.uri,
+                        onClick = { onPick(item) },
                     )
                 }
-            }
-            items(items = media, key = { it.uri }) { item ->
-                MediaChip(
-                    text = item.displayName,
-                    selected = selectedUri == item.uri,
-                    onClick = { onPick(item) },
-                )
             }
         }
     }
