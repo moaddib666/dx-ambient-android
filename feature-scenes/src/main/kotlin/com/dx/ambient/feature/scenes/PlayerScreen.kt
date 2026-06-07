@@ -1,0 +1,127 @@
+package com.dx.ambient.feature.scenes
+
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
+import androidx.tv.material3.Text
+import com.dx.ambient.rendering.AmbientStage
+import kotlinx.coroutines.delay
+
+/**
+ * Full-screen ambient playback (MVP features 2, 3, 5, 9).
+ *
+ * Renders the effective scene through [AmbientStage] (fast SurfaceView path plus optional
+ * mask and dim scrim). The remote center/enter key toggles play/pause; Back stops playback
+ * and exits. A brief auto-hiding overlay names the active scene.
+ */
+@Composable
+fun PlayerScreen(
+    sceneId: String,
+    onExit: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val viewModel: PlayerViewModel = hiltViewModel()
+    val uiState by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(sceneId) {
+        viewModel.bind(sceneId)
+    }
+
+    BackHandler {
+        viewModel.onStop()
+        onExit()
+    }
+
+    val focusRequester = remember { FocusRequester() }
+    var overlayVisible by remember { mutableStateOf(true) }
+
+    val scene = uiState.scene
+
+    // Auto-hide the scene-name overlay shortly after it (re)appears.
+    LaunchedEffect(scene?.id) {
+        if (scene != null) {
+            overlayVisible = true
+            delay(2_500)
+            overlayVisible = false
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .focusRequester(focusRequester)
+            .focusable()
+            .onKeyEvent { event ->
+                if (event.type == KeyEventType.KeyUp &&
+                    (event.key == Key.DirectionCenter || event.key == Key.Enter)
+                ) {
+                    viewModel.togglePlay()
+                    overlayVisible = true
+                    true
+                } else {
+                    false
+                }
+            },
+    ) {
+        if (scene != null) {
+            AmbientStage(
+                player = viewModel.player,
+                scene = scene,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            if (overlayVisible) {
+                Surface(
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .align(Alignment.BottomStart)
+                        .padding(48.dp),
+                ) {
+                    Text(
+                        text = scene.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    )
+                }
+            }
+        } else if (!uiState.loading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "Scene unavailable",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.White,
+                )
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+}

@@ -1,0 +1,32 @@
+# Built application files / build output (any module, any depth)
+build/
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Gradle
+.gradle/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Kotlin
+.kotlin/
+
+# Local configuration (SDK path, secrets) — never commit
+local.properties
+
+# IDE
+*.iml
+.idea/
+.DS_Store
+
+# Keystores (allow a shared debug keystore if ever added)
+*.keystore
+!debug.keystore
+
+# Logs
+*.log

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TV banner / app icon. Vector so no PNG assets are needed for the prototype. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+
+    <path
+        android:fillColor="#0A0D10"
+        android:pathData="M0,0 L320,0 L320,180 L0,180 Z" />
+
+    <!-- Soft ambient glow -->
+    <path
+        android:fillColor="#1C2A3A"
+        android:pathData="M160,90 m-70,0 a70,70 0 1,0 140,0 a70,70 0 1,0 -140,0 Z" />
+    <path
+        android:fillColor="#8AB4F8"
+        android:pathData="M160,90 m-34,0 a34,34 0 1,0 68,0 a34,34 0 1,0 -68,0 Z" />
+    <path
+        android:fillColor="#0A0D10"
+        android:pathData="M160,90 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0 Z" />
+</vector>

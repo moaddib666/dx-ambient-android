@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The optional YouTube mode uses the official IFrame player in a WebView, which needs
+         network access. This module performs NO audio extraction and NO background playback. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+</manifest>
