@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Launcher icon backdrop (the foreground art is already logo-on-black, full-bleed). -->
-    <color name="ic_launcher_background">#04060A</color>
+    <color name="ic_launcher_background">#070B12</color>
     <!-- Splash window background (matches the app's near-black surface). -->
     <color name="splash_background">#05070A</color>
 </resources>
