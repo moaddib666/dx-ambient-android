@@ -283,7 +283,16 @@ private fun buildPlayerHtml(videoId: String?, playlistId: String?): String {
                     $playerVarsBody
                   },
                   events: {
-                    'onReady': function (e) { e.target.playVideo(); }
+                    'onReady': function (e) { e.target.playVideo(); },
+                    'onError': function (e) {
+                      // Some videos disable embedding (errors 101/150/152). In a playlist, skip
+                      // ahead to the next item so a playable one is found (bounded to avoid loops).
+                      if (window.__skips === undefined) window.__skips = 0;
+                      if (window.__skips < 50) {
+                        window.__skips++;
+                        try { e.target.nextVideo(); } catch (err) {}
+                      }
+                    }
                   }
                 });
               }
