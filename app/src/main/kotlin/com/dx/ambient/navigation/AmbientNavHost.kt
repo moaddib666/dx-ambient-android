@@ -21,16 +21,13 @@ import com.dx.ambient.feature.settings.DeviceInfoScreen
 import com.dx.ambient.feature.settings.SettingsScreen
 import com.dx.ambient.rendering.components.AmbientScreen
 import com.dx.ambient.youtube.YouTubeIFrameScreen
+import com.dx.ambient.youtube.ui.YouTubeTabScreen
 
 /**
- * App navigation graph. Single-activity, Compose Navigation. The optional YouTube destination
- * is wired here but lives entirely in the isolated `optional-youtube` module.
- *
- * Replace [DEMO_YOUTUBE_VIDEO_ID] with a real source picker before shipping YouTube mode; it is
- * intentionally blank so the prototype never embeds an arbitrary third-party video.
+ * App navigation graph. Single-activity, Compose Navigation. The optional YouTube destinations
+ * (the login/playlists hub and the IFrame player) live entirely in the isolated
+ * `optional-youtube` module.
  */
-private const val DEMO_YOUTUBE_VIDEO_ID = ""
-
 @Composable
 fun AmbientNavHost() {
     val navController = rememberNavController()
@@ -115,10 +112,23 @@ fun AmbientNavHost() {
             }
         }
 
+        // YouTube hub: login wall → the signed-in user's playlists.
         composable(Routes.YOUTUBE) {
+            YouTubeTabScreen(
+                onPlayPlaylist = { playlistId -> navController.navigate(Routes.youtubePlayer(playlistId)) },
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // Plays a chosen YouTube playlist via the official IFrame player.
+        composable(
+            route = Routes.YOUTUBE_PLAYER,
+            arguments = listOf(navArgument(Routes.ARG_PLAYLIST_ID) { type = NavType.StringType }),
+        ) { entry ->
+            val playlistId = entry.arguments?.getString(Routes.ARG_PLAYLIST_ID)
             YouTubeIFrameScreen(
-                videoId = DEMO_YOUTUBE_VIDEO_ID.ifBlank { null },
-                playlistId = null,
+                videoId = null,
+                playlistId = playlistId,
                 onExit = { navController.popBackStack() },
             )
         }

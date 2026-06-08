@@ -21,8 +21,13 @@ object Routes {
     const val SETTINGS = "settings"
     const val DEVICE_INFO = "device-info"
 
-    /** Optional, isolated YouTube IFrame mode. */
+    /** Optional, isolated YouTube hub (login wall → the user's playlists). */
     const val YOUTUBE = "youtube"
 
+    /** Plays a chosen YouTube playlist via the official IFrame player. */
+    const val YOUTUBE_PLAYER = "youtube/player/{playlistId}"
+    fun youtubePlayer(playlistId: String) = "youtube/player/$playlistId"
+
     const val ARG_SCENE_ID = "sceneId"
+    const val ARG_PLAYLIST_ID = "playlistId"
 }

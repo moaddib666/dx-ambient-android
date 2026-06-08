@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      ============================================================================
+       YOUTUBE OAuth CONFIG  —  fill this in to enable "Sign in with YouTube".
+      ============================================================================
+      Paste your Google Cloud OAuth **Web client ID** here (looks like
+      `1234567890-abcdef.apps.googleusercontent.com`).
+
+      Setup (one-time, in https://console.cloud.google.com):
+        1. Create / pick a project, enable "YouTube Data API v3".
+        2. OAuth consent screen → External; add scope
+           `.../auth/youtube.readonly`; add yourself as a test user.
+        3. Credentials → Create OAuth client ID:
+             • Android client: package `com.dx.ambient` + your signing SHA-1
+               (debug SHA-1 for local testing).
+             • Web client: copy its client ID into the string below.
+
+      While this is blank the YouTube tab shows a "setup required" notice instead
+      of attempting sign-in. Playback always stays on the official IFrame player.
+    -->
+    <string name="youtube_web_client_id" translatable="false"></string>
+</resources>

@@ -4,5 +4,6 @@
     <!-- The optional YouTube mode uses the official IFrame player in a WebView, which needs
          network access. This module performs NO audio extraction and NO background playback. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
 </manifest>
