@@ -6,10 +6,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
@@ -64,6 +69,28 @@ fun PrimaryButton(
         scale = ButtonDefaults.scale(focusedScale = 1.1f),
     ) {
         Text(text)
+    }
+}
+
+/**
+ * A native circular icon button (e.g. a "+" action). Built on the TV [Button] so it keeps the
+ * platform focus scale/glow, just with a circular shape and an icon instead of a text label.
+ */
+@Composable
+fun CircleIconButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.Add,
+    contentDescription: String? = null,
+    diameter: Dp = 52.dp,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.size(diameter),
+        shape = ButtonDefaults.shape(shape = CircleShape),
+        contentPadding = PaddingValues(0.dp),
+    ) {
+        Icon(imageVector = icon, contentDescription = contentDescription)
     }
 }
 

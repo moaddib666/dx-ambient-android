@@ -1,7 +1,6 @@
 package com.dx.ambient.feature.scenes
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -30,7 +28,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -46,6 +43,7 @@ import coil.compose.AsyncImage
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
 import com.dx.ambient.rendering.components.AmbientScreen
+import com.dx.ambient.rendering.components.CircleIconButton
 import com.dx.ambient.rendering.components.EmptyState
 import com.dx.ambient.rendering.components.PrimaryButton
 import com.dx.ambient.rendering.components.ScreenPadding
@@ -84,17 +82,14 @@ fun HomeScreen(
             .fillMaxSize()
             .padding(ScreenPadding),
       ) {
-        Image(
-            painter = painterResource(R.drawable.dx_wordmark),
-            contentDescription = "DX Ambient",
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.height(52.dp).padding(bottom = 12.dp),
-        )
-
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            PrimaryButton(
-                text = "New Scene",
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // New scene: a native circular "+" button.
+            CircleIconButton(
                 onClick = onCreateScene,
+                contentDescription = "New scene",
                 modifier = Modifier.focusRequester(firstActionFocus),
             )
             PrimaryButton(text = "Library", onClick = onOpenLibrary)
