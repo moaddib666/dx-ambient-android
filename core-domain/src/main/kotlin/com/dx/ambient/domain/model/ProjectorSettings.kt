@@ -31,6 +31,12 @@ data class ProjectorSettings(
 
     /** True once the app has seeded its bundled default scenes (e.g. Digital Campfire). */
     val defaultsSeeded: Boolean = false,
+
+    /**
+     * Ids of bundled default scenes that have already been seeded. Lets newly-shipped defaults
+     * appear on existing installs without resurrecting ones the user deliberately deleted.
+     */
+    val seededDefaultIds: Set<String> = emptySet(),
 ) {
     val hasSleepTimer: Boolean get() = sleepTimerMinutes > 0
     val hasAutoDim: Boolean get() = dimAfterMinutes > 0

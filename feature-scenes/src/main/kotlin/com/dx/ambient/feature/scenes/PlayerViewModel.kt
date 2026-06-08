@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -47,25 +48,54 @@ class PlayerViewModel @Inject constructor(
     private var sleepTimerJob: Job? = null
     private var autoDimJob: Job? = null
 
+    /** Saved scenes in home-grid order, used to resolve the previous/next scene for D-pad swiping. */
+    private var orderedScenes: List<Scene> = emptyList()
+
+    init {
+        viewModelScope.launch {
+            sceneRepository.observeScenes().collectLatest { orderedScenes = it }
+        }
+    }
+
     /** Loads [sceneId], computes its effective form, begins playback and arms the timers. */
     fun bind(sceneId: String) {
-        viewModelScope.launch {
-            _state.value = PlayerUiState(scene = null, loading = true)
+        viewModelScope.launch { loadScene(sceneId) }
+    }
 
-            val scene = sceneRepository.getScene(sceneId) ?: run {
-                _state.value = PlayerUiState(scene = null, loading = false)
-                return@launch
-            }
-            val settings = settingsRepository.observeSettings().first()
-            val effective = resolveEffectiveScene(scene, settings)
+    /** Switch to the previous scene in the home-grid order, wrapping around (D-pad left). */
+    fun previous() = step(-1)
 
-            settingsRepository.setLastSceneId(scene.id)
-            player.load(effective)
-            _state.value = PlayerUiState(scene = effective, loading = false)
+    /** Switch to the next scene in the home-grid order, wrapping around (D-pad right). */
+    fun next() = step(1)
 
-            armSleepTimer(settings.sleepTimerMinutes)
-            armAutoDim(settings.dimAfterMinutes, settings.dimBrightness)
+    private fun step(direction: Int) {
+        val current = _state.value.scene ?: return
+        val list = orderedScenes
+        if (list.size < 2) return
+        val index = list.indexOfFirst { it.id == current.id }
+        if (index < 0) return
+        val target = list[(index + direction + list.size) % list.size]
+        if (target.id != current.id) {
+            viewModelScope.launch { loadScene(target.id) }
         }
+    }
+
+    private suspend fun loadScene(sceneId: String) {
+        _state.value = PlayerUiState(scene = null, loading = true)
+
+        val scene = sceneRepository.getScene(sceneId) ?: run {
+            _state.value = PlayerUiState(scene = null, loading = false)
+            return
+        }
+        val settings = settingsRepository.observeSettings().first()
+        val effective = resolveEffectiveScene(scene, settings)
+
+        settingsRepository.setLastSceneId(scene.id)
+        player.load(effective)
+        _state.value = PlayerUiState(scene = effective, loading = false)
+
+        armSleepTimer(settings.sleepTimerMinutes)
+        armAutoDim(settings.dimAfterMinutes, settings.dimBrightness)
     }
 
     /** Toggle play/pause in response to the remote center/enter key (MVP feature 2). */

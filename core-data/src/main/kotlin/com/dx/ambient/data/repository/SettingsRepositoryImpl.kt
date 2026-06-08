@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.dx.ambient.domain.model.ProjectorSettings
 import com.dx.ambient.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +32,7 @@ class SettingsRepositoryImpl @Inject constructor(
             prefs[Keys.BURN_IN] = updated.burnInProtection
             prefs[Keys.RESUME_LAST] = updated.resumeLastSceneOnLaunch
             prefs[Keys.DEFAULTS_SEEDED] = updated.defaultsSeeded
+            prefs[Keys.SEEDED_DEFAULT_IDS] = updated.seededDefaultIds
             updated.lastSceneId?.let { prefs[Keys.LAST_SCENE] = it } ?: prefs.remove(Keys.LAST_SCENE)
         }
     }
@@ -53,6 +55,7 @@ class SettingsRepositoryImpl @Inject constructor(
             resumeLastSceneOnLaunch = this[Keys.RESUME_LAST] ?: defaults.resumeLastSceneOnLaunch,
             lastSceneId = this[Keys.LAST_SCENE],
             defaultsSeeded = this[Keys.DEFAULTS_SEEDED] ?: defaults.defaultsSeeded,
+            seededDefaultIds = this[Keys.SEEDED_DEFAULT_IDS] ?: defaults.seededDefaultIds,
         )
     }
 
@@ -66,5 +69,6 @@ class SettingsRepositoryImpl @Inject constructor(
         val RESUME_LAST = booleanPreferencesKey("resume_last_scene")
         val LAST_SCENE = stringPreferencesKey("last_scene_id")
         val DEFAULTS_SEEDED = booleanPreferencesKey("defaults_seeded")
+        val SEEDED_DEFAULT_IDS = stringSetPreferencesKey("seeded_default_ids")
     }
 }

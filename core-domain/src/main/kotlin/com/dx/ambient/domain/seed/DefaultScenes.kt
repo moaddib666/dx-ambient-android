@@ -13,8 +13,10 @@ import com.dx.ambient.domain.model.Scene
 object DefaultScenes {
 
     const val CAMPFIRE_ID = "default-campfire"
+    const val SPACE_ODYSSEY_ID = "default-space-odyssey"
 
     private const val CAMPFIRE_BASE = "file:///android_asset/scenes/campfire"
+    private const val SPACE_ODYSSEY_BASE = "file:///android_asset/scenes/space-odyssey"
 
     /**
      * Digital Campfire: two short fire loops alternated for variety, a separate crackle
@@ -51,6 +53,30 @@ object DefaultScenes {
         sortOrder = -100,
     )
 
+    /**
+     * Space Odyssey: a hyperrealistic ultra-wide drift through space, with a separate ambient
+     * soundtrack that loops independently of the footage. No mask — the footage already fades
+     * into black at the edges. Full brightness since the picture is dark.
+     */
+    val spaceOdyssey: Scene = Scene(
+        id = SPACE_ODYSSEY_ID,
+        name = "Space Odyssey",
+        videoSource = MediaSource(
+            uri = "$SPACE_ODYSSEY_BASE/loop.mp4",
+            type = MediaSourceType.LOCAL_VIDEO,
+            displayName = "Space drift",
+        ),
+        audioSource = MediaSource(
+            uri = "$SPACE_ODYSSEY_BASE/sound.m4a",
+            type = MediaSourceType.LOCAL_AUDIO,
+            displayName = "Space ambience",
+        ),
+        brightness = 1f,
+        loopMode = LoopMode.LOOP_ONE,
+        thumbnailUri = "$SPACE_ODYSSEY_BASE/preview.webp",
+        sortOrder = -90,
+    )
+
     /** All bundled default scenes, in display order. */
-    val all: List<Scene> = listOf(campfire)
+    val all: List<Scene> = listOf(campfire, spaceOdyssey)
 }

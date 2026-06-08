@@ -78,14 +78,22 @@ fun PlayerScreen(
             .focusRequester(focusRequester)
             .focusable()
             .onKeyEvent { event ->
-                if (event.type == KeyEventType.KeyUp &&
-                    (event.key == Key.DirectionCenter || event.key == Key.Enter)
-                ) {
-                    viewModel.togglePlay()
-                    overlayVisible = true
-                    true
-                } else {
-                    false
+                if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
+                when (event.key) {
+                    Key.DirectionCenter, Key.Enter -> {
+                        viewModel.togglePlay()
+                        overlayVisible = true
+                        true
+                    }
+                    Key.DirectionLeft -> {
+                        viewModel.previous()
+                        true
+                    }
+                    Key.DirectionRight -> {
+                        viewModel.next()
+                        true
+                    }
+                    else -> false
                 }
             },
     ) {
