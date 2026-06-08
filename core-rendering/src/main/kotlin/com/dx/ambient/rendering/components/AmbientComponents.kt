@@ -82,15 +82,22 @@ fun CircleIconButton(
     modifier: Modifier = Modifier,
     icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Default.Add,
     contentDescription: String? = null,
-    diameter: Dp = 52.dp,
+    diameter: Dp = 40.dp,
 ) {
     Button(
         onClick = onClick,
+        // Same height as the text pills so the row aligns, same glass colors + focus scale.
         modifier = modifier.size(diameter),
+        colors = ambientButtonColors(),
+        scale = ButtonDefaults.scale(focusedScale = 1.1f),
         shape = ButtonDefaults.shape(shape = CircleShape),
         contentPadding = PaddingValues(0.dp),
     ) {
-        Icon(imageVector = icon, contentDescription = contentDescription)
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(22.dp),
+        )
     }
 }
 
