@@ -45,7 +45,7 @@ import com.dx.ambient.youtube.data.YouTubePlaylist
 //  tab lists the signed-in user's real playlists (YouTubeViewModel.Playlists). Demo-only path so
 //  the IFrame player can be exercised without Google sign-in.
 private const val DEMO_PLAYLIST_URL =
-    "https://www.youtube.com/playlist?list=PLazDOSmamQaG5mUcnwVfgHI9If7Y1n2b9"
+    "https://www.youtube.com/playlist?list=PLazDOSmamQaEGEwkFvuuh5jCrmjGfadOr"
 
 /**
  * The YouTube hub. Starts at a login wall ("sign in with your YouTube account") and, once

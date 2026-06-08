@@ -25,11 +25,19 @@ package com.dx.ambient.youtube
 
 import android.annotation.SuppressLint
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -44,9 +52,12 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.dx.ambient.rendering.components.PrimaryButton
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -94,6 +105,11 @@ fun YouTubeIFrameScreen(
     // reach it. Scoped to this composition instance.
     val webViewHolder = remember { mutableStateOf<WebView?>(null) }
 
+    // Set true when the embed can't play (YouTube's WebView Media Integrity check, or all
+    // playlist videos disable embedding). The JS bridge flips this from a background thread.
+    val blocked = remember { mutableStateOf(false) }
+    val bridge = remember { YouTubeJsBridge { blocked.value = true } }
+
     // Focusable wrapper that intercepts BACK to exit YouTube mode entirely;
     // playback is torn down in onDispose.
     val focusRequester = remember { FocusRequester() }
@@ -133,7 +149,19 @@ fun YouTubeIFrameScreen(
                         // programmatically without a manual user gesture.
                         mediaPlaybackRequiresUserGesture = false
                         domStorageEnabled = true
+                        // Help the embed satisfy YouTube's checks inside a WebView.
+                        loadWithOverviewMode = true
+                        useWideViewPort = true
+                        @Suppress("DEPRECATION")
+                        databaseEnabled = true
                     }
+
+                    // HTML5 <video>/IFrame media requires a WebChromeClient — without it YouTube
+                    // refuses to play (renders "This video is unavailable").
+                    webChromeClient = WebChromeClient()
+
+                    // Lets the player JS report unplayable/blocked embeds back to native UI.
+                    addJavascriptInterface(bridge, "AndroidYT")
 
                     // Keep the user inside the embedded player: block navigations to
                     // non-YouTube origins (e.g. tapping the logo). Uses the String overload
@@ -160,6 +188,33 @@ fun YouTubeIFrameScreen(
             },
             update = { /* No reactive updates: html is keyed via remember(). */ },
         )
+
+        // Friendly overlay when the embed is blocked (e.g. Media Integrity on emulators /
+        // uncertified devices, or every video in the playlist disables embedding).
+        if (blocked.value) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color(0xFF0A0D10)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(32.dp),
+                ) {
+                    Text(
+                        text = "This playlist can't play in the embedded player here.",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    Text(
+                        text = "YouTube blocks embedded playback on emulators and uncertified " +
+                            "devices, and on videos whose owners disabled embedding. Try a " +
+                            "Play-certified device, or a playlist of embeddable videos.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    PrimaryButton(text = "Back", onClick = onExit)
+                }
+            }
+        }
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -280,10 +335,20 @@ private fun buildPlayerHtml(videoId: String?, playlistId: String?): String {
                   height: '100%',
                   $videoIdLine
                   playerVars: {
-                    $playerVarsBody
+                    $playerVarsBody,
+                    'enablejsapi': 1,
+                    'origin': 'https://www.youtube.com',
+                    'widget_referrer': 'https://www.youtube.com'
                   },
+                  host: 'https://www.youtube.com',
                   events: {
                     'onReady': function (e) { e.target.playVideo(); },
+                    'onStateChange': function (e) {
+                      if (e.data === YT.PlayerState.PLAYING && window.__watchdog) {
+                        clearTimeout(window.__watchdog);
+                        window.__watchdog = null;
+                      }
+                    },
                     'onError': function (e) {
                       // Some videos disable embedding (errors 101/150/152). In a playlist, skip
                       // ahead to the next item so a playable one is found (bounded to avoid loops).
@@ -291,15 +356,36 @@ private fun buildPlayerHtml(videoId: String?, playlistId: String?): String {
                       if (window.__skips < 50) {
                         window.__skips++;
                         try { e.target.nextVideo(); } catch (err) {}
+                      } else if (window.AndroidYT) {
+                        window.AndroidYT.onUnplayable();
                       }
                     }
                   }
                 });
+                // Unconditional watchdog: if playback hasn't started within 9s (blocked embed,
+                // Media Integrity, or all videos unplayable), surface a native message. Set here
+                // — not inside onReady — because a blocked player may never fire onReady.
+                window.__watchdog = setTimeout(function () {
+                  if (window.AndroidYT) { window.AndroidYT.onUnplayable(); }
+                }, 9000);
               }
             </script>
           </body>
         </html>
     """.trimIndent()
+}
+
+/**
+ * JS → native bridge. Must be a public, named class: `addJavascriptInterface` reaches
+ * `@JavascriptInterface` methods via reflection, which fails on Kotlin anonymous objects.
+ */
+class YouTubeJsBridge(private val onBlocked: () -> Unit) {
+    private val main = Handler(Looper.getMainLooper())
+
+    @JavascriptInterface
+    fun onUnplayable() {
+        main.post { onBlocked() }
+    }
 }
 
 /** JS evaluated to pause playback when leaving the RESUMED state. */
