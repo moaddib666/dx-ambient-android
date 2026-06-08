@@ -3,6 +3,7 @@ package com.dx.ambient
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -13,6 +14,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Show the branded system splash (Android 12+) and hand off to the app theme.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         // Immersive, edge-to-edge ambient surface: draw under the system bars and hide them.
