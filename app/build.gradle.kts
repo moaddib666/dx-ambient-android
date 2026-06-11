@@ -1,10 +1,33 @@
+import com.github.triplet.gradle.androidpublisher.ReleaseStatus
+import com.github.triplet.gradle.androidpublisher.ResolutionStrategy
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    alias(libs.plugins.play.publisher)
 }
+
+// Release signing is read from keystore.properties (gitignored) when present, or
+// from environment variables (CI). When neither is configured the release build
+// falls back to the debug signing key so `assembleRelease` still works locally —
+// only a properly-signed bundle should ever be uploaded to Play.
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties =
+    Properties().apply {
+        if (keystorePropertiesFile.exists()) {
+            keystorePropertiesFile.inputStream().use { load(it) }
+        }
+    }
+
+fun signingValue(propKey: String, envKey: String): String? =
+    keystoreProperties.getProperty(propKey) ?: System.getenv(envKey)
+
+val releaseStoreFilePath = signingValue("storeFile", "DXA_STORE_FILE")
+val hasReleaseSigning = !releaseStoreFilePath.isNullOrBlank()
 
 android {
     namespace = "com.dx.ambient"
@@ -14,19 +37,37 @@ android {
         applicationId = "com.dx.ambient"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2 // floor only — Play Publisher auto-resolves the next free code at upload
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(releaseStoreFilePath!!)
+                storePassword = signingValue("storePassword", "DXA_STORE_PASSWORD")
+                keyAlias = signingValue("keyAlias", "DXA_KEY_ALIAS")
+                keyPassword = signingValue("keyPassword", "DXA_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            signingConfig =
+                if (hasReleaseSigning) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
         }
     }
 
@@ -42,7 +83,28 @@ android {
         jvmTarget = "17"
     }
     ndkVersion = "27.1.12297006"
-    buildToolsVersion = "34.0.0"
+}
+
+// Gradle Play Publisher — publishes the AAB, store listing, graphics and release
+// notes straight to the Play Console (docs/PUBLISHING.md). Credentials come from
+// play-service-account.json at the repo root (gitignored) or the
+// ANDROID_PUBLISHER_CREDENTIALS env var on CI. Listing sources live in
+// app/src/main/play/.
+play {
+    val credentials = rootProject.file("play-service-account.json")
+    val hasPlayCredentials =
+        credentials.exists() || !System.getenv("ANDROID_PUBLISHER_CREDENTIALS").isNullOrBlank()
+    // Without credentials the plugin is disabled entirely so plain release builds
+    // (bundleRelease/assembleRelease) keep working before the one-time setup.
+    enabled.set(hasPlayCredentials)
+    if (credentials.exists()) {
+        serviceAccountCredentials.set(credentials)
+    }
+    defaultToAppBundles.set(true)
+    track.set("internal")
+    releaseStatus.set(ReleaseStatus.COMPLETED)
+    // Pull the next free versionCode from Play so uploads never collide.
+    resolutionStrategy.set(ResolutionStrategy.AUTO)
 }
 
 dependencies {

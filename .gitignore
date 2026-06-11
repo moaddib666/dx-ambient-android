@@ -24,9 +24,14 @@ local.properties
 .idea/
 .DS_Store
 
-# Keystores (allow a shared debug keystore if ever added)
+# Keystores & signing secrets — NEVER commit (allow a shared debug keystore)
 *.keystore
+*.jks
+keystore.properties
 !debug.keystore
+
+# Google Play service-account key (Gradle Play Publisher) — NEVER commit
+play-service-account.json
 
 # Logs
 *.log

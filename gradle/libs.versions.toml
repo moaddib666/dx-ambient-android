@@ -6,6 +6,9 @@ ksp = "2.0.21-1.0.28"
 hilt = "2.52"
 hiltNavigationCompose = "1.2.0"
 
+# Publishing — Gradle Play Publisher (uploads AAB + listing to Google Play)
+playPublisher = "3.12.1"
+
 # AndroidX core
 coreKtx = "1.15.0"
 coreSplashscreen = "1.0.1"
@@ -129,3 +132,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+play-publisher = { id = "com.github.triplet.play", version.ref = "playPublisher" }
