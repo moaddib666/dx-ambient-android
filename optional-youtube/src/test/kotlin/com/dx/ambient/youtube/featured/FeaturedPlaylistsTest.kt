@@ -33,3 +33,34 @@ class FeaturedPlaylistsTest {
         assertTrue(default.isDefault)
     }
 }
+
+class MaskOverridesTest {
+
+    @org.junit.Test
+    fun `mask overrides survive an encode-decode round trip`() {
+        val map = mapOf("PL1" to "file:///android_asset/masks/generic.png", "PL2" to "")
+        org.junit.Assert.assertEquals(map, decodeMaskOverrides(encodeMaskOverrides(map)))
+    }
+
+    @org.junit.Test
+    fun `corrupt mask override payload decodes to empty map`() {
+        org.junit.Assert.assertEquals(emptyMap<String, String>(), decodeMaskOverrides("{ bad"))
+        org.junit.Assert.assertEquals(emptyMap<String, String>(), decodeMaskOverrides(null))
+    }
+
+    @org.junit.Test
+    fun `default featured playlist ships with the shared generic mask`() {
+        org.junit.Assert.assertEquals(
+            FeaturedPlaylistsRepository.GENERIC_MASK_URI,
+            FeaturedPlaylistsRepository.DEFAULTS.single().maskUri,
+        )
+    }
+
+    @org.junit.Test
+    fun `custom entry maskUri survives persistence round trip`() {
+        val custom = listOf(
+            FeaturedPlaylist("PL9", "Calm", isDefault = false, thumbnailUrl = null, maskUri = "file:///m.png"),
+        )
+        org.junit.Assert.assertEquals(custom, decodeCustomFeatured(encodeCustomFeatured(custom)))
+    }
+}

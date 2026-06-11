@@ -63,6 +63,7 @@ fun AmbientNavHost() {
             // Featured YouTube playlists pinned on Home: always listed, playable only
             // when online + silently signed in; otherwise greyed out with the reason.
             var featuredTiles: List<FeaturedTile> = emptyList()
+            var featuredMasks: Map<String, String?> = emptyMap()
             if (BuildConfig.YOUTUBE_MODE_ENABLED) {
                 val featuredViewModel: YouTubeFeaturedViewModel = hiltViewModel()
                 val featured by featuredViewModel.state.collectAsStateWithLifecycle()
@@ -76,6 +77,7 @@ fun AmbientNavHost() {
                         thumbnailUrl = item.thumbnailUrl,
                     )
                 }
+                featuredMasks = featured.items.associate { it.playlistId to it.maskUri }
             }
 
             HomeScreen(
@@ -91,7 +93,9 @@ fun AmbientNavHost() {
                 },
                 featuredTiles = featuredTiles,
                 onPlayFeatured = { playlistId ->
-                    navController.navigate(Routes.youtubePlayer(playlistId))
+                    navController.navigate(
+                        Routes.youtubePlayer(playlistId, featuredMasks[playlistId]),
+                    )
                 },
             )
         }
@@ -144,7 +148,9 @@ fun AmbientNavHost() {
         // YouTube hub: login wall → the signed-in user's playlists.
         composable(Routes.YOUTUBE) {
             YouTubeTabScreen(
-                onPlayPlaylist = { playlistId -> navController.navigate(Routes.youtubePlayer(playlistId)) },
+                onPlayPlaylist = { playlistId, maskUri ->
+                    navController.navigate(Routes.youtubePlayer(playlistId, maskUri))
+                },
                 onBack = { navController.popBackStack() },
             )
         }
@@ -152,12 +158,21 @@ fun AmbientNavHost() {
         // Plays a chosen YouTube playlist via the official IFrame player.
         composable(
             route = Routes.YOUTUBE_PLAYER,
-            arguments = listOf(navArgument(Routes.ARG_PLAYLIST_ID) { type = NavType.StringType }),
+            arguments = listOf(
+                navArgument(Routes.ARG_PLAYLIST_ID) { type = NavType.StringType },
+                navArgument(Routes.ARG_MASK) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
         ) { entry ->
             val playlistId = entry.arguments?.getString(Routes.ARG_PLAYLIST_ID)
+            val maskUri = entry.arguments?.getString(Routes.ARG_MASK)
             YouTubeIFrameScreen(
                 videoId = null,
                 playlistId = playlistId,
+                maskUri = maskUri,
                 onExit = { navController.popBackStack() },
             )
         }

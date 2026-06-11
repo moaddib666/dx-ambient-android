@@ -6,8 +6,10 @@ import com.dx.ambient.domain.model.LoopMode
 import com.dx.ambient.domain.model.MediaKind
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.usecase.SaveSceneUseCase
+import com.dx.ambient.playback.AmbientPlayer
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -30,8 +32,10 @@ class SceneEditorViewModelTest {
         every { it.assets } returns mockk(relaxed = true)
     }
 
+    private val player = mockk<AmbientPlayer>(relaxed = true)
+
     private fun newViewModel() =
-        SceneEditorViewModel(context, sceneRepo, mediaRepo, SaveSceneUseCase(sceneRepo))
+        SceneEditorViewModel(context, sceneRepo, mediaRepo, SaveSceneUseCase(sceneRepo), player)
 
     @Test
     fun `bind null starts a fresh draft`() {
@@ -48,6 +52,30 @@ class SceneEditorViewModelTest {
         assertEquals(1f, vm.draft.value.brightness)
         vm.setBrightness(-0.5f)
         assertEquals(0f, vm.draft.value.brightness)
+    }
+
+    @Test
+    fun `cycleMask steps through none and imported masks, wrapping both ways`() = runTest {
+        val vm = newViewModel()
+        mediaRepo.media.value = listOf(
+                LibraryMedia("u1", "Mask A", "image/png", MediaKind.IMAGE, 0, 0, "t"),
+                LibraryMedia("u2", "Mask B", "image/png", MediaKind.IMAGE, 0, 0, "t"),
+            )
+        // Subscribe so the stateIn flows actually collect, then let them settle.
+        backgroundScope.launch { vm.masks.collect {} }
+        testScheduler.advanceUntilIdle()
+
+        vm.bind(null)
+        assertFalse(vm.draft.value.mask.enabled)
+
+        vm.cycleMask(1)
+        assertEquals("u1", vm.draft.value.mask.uri)
+        vm.cycleMask(1)
+        assertEquals("u2", vm.draft.value.mask.uri)
+        vm.cycleMask(1) // wraps to "no mask"
+        assertFalse(vm.draft.value.mask.enabled)
+        vm.cycleMask(-1) // wraps backwards to the last mask
+        assertEquals("u2", vm.draft.value.mask.uri)
     }
 
     @Test

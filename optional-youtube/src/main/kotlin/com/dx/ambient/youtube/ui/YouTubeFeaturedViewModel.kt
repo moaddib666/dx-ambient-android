@@ -91,6 +91,24 @@ class YouTubeFeaturedViewModel @Inject constructor(
         }
     }
 
+    /** Sets (null clears) the mask overlaid on a featured playlist's playback. */
+    fun setMask(playlistId: String, maskUri: String?) {
+        viewModelScope.launch { repository.setMask(playlistId, maskUri) }
+    }
+
+    /** Bundled shared masks (core-rendering `assets/masks/`), for the mask picker. */
+    fun bundledMasks(): List<Pair<String, String>> = runCatching {
+        context.assets.list("masks").orEmpty()
+            .filter { it.endsWith(".webp", true) || it.endsWith(".png", true) }
+            .sorted()
+            .map { name ->
+                val label = name.substringBeforeLast('.')
+                    .replace('_', ' ')
+                    .replaceFirstChar { it.uppercase() }
+                label to "file:///android_asset/masks/$name"
+            }
+    }.getOrDefault(emptyList())
+
     private fun isOnline(): Boolean {
         val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
         val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false

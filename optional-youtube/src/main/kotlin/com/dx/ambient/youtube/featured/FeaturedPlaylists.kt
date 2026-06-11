@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -28,6 +30,8 @@ data class FeaturedPlaylist(
     val title: String,
     val isDefault: Boolean = false,
     val thumbnailUrl: String? = null,
+    /** Alpha mask composited over playback (shared bundled mask or any image URI). */
+    val maskUri: String? = null,
 )
 
 /**
@@ -39,10 +43,18 @@ data class FeaturedPlaylist(
 class FeaturedPlaylistsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
-    /** Defaults first, then the user's custom entries. */
+    /** Defaults first, then the user's custom entries; per-playlist mask overrides applied. */
     val featured: Flow<List<FeaturedPlaylist>> =
         context.featuredDataStore.data.map { prefs ->
-            DEFAULTS + decodeCustomFeatured(prefs[CUSTOM_KEY])
+            val overrides = decodeMaskOverrides(prefs[MASKS_KEY])
+            (DEFAULTS + decodeCustomFeatured(prefs[CUSTOM_KEY])).map { item ->
+                when {
+                    // An explicit override always wins; empty string means "mask removed".
+                    overrides.containsKey(item.playlistId) ->
+                        item.copy(maskUri = overrides[item.playlistId].takeUnless { it.isNullOrEmpty() })
+                    else -> item
+                }
+            }
         }
 
     suspend fun isFeatured(playlistId: String): Boolean =
@@ -61,6 +73,18 @@ class FeaturedPlaylistsRepository @Inject constructor(
         }
     }
 
+    /**
+     * Sets (or with null clears) the mask for a featured playlist — works for the
+     * locked defaults too, since the override lives outside the entry itself.
+     */
+    suspend fun setMask(playlistId: String, maskUri: String?) {
+        context.featuredDataStore.edit { prefs ->
+            val overrides = decodeMaskOverrides(prefs[MASKS_KEY]).toMutableMap()
+            overrides[playlistId] = maskUri ?: ""
+            prefs[MASKS_KEY] = encodeMaskOverrides(overrides)
+        }
+    }
+
     /** Removes a custom entry. Defaults are not removable — returns false for them. */
     suspend fun remove(playlistId: String): Boolean {
         if (DEFAULTS.any { it.playlistId == playlistId }) return false
@@ -72,14 +96,18 @@ class FeaturedPlaylistsRepository @Inject constructor(
     }
 
     companion object {
+        /** The bundled shared mask (core-rendering assets/masks). */
+        const val GENERIC_MASK_URI = "file:///android_asset/masks/generic.png"
+
         /** Shipped featured playlists — permanent, not user-removable. */
         val DEFAULTS: List<FeaturedPlaylist> = listOf(
             FeaturedPlaylist(
                 playlistId = "PLazDOSmamQaHwJRkOrRBrfB8zT4JBHpgZ",
                 title = "DX Ambient — Featured",
                 isDefault = true,
-                // Artwork + mask to be bundled later; gradient placeholder until then.
+                // Artwork to be bundled later; gradient placeholder until then.
                 thumbnailUrl = null,
+                maskUri = GENERIC_MASK_URI,
             ),
         )
     }
@@ -90,6 +118,7 @@ private val Context.featuredDataStore: DataStore<Preferences> by preferencesData
 )
 
 private val CUSTOM_KEY = stringPreferencesKey("custom_featured_json")
+private val MASKS_KEY = stringPreferencesKey("mask_overrides_json")
 
 private val FeaturedJson = Json { ignoreUnknownKeys = true }
 
@@ -98,18 +127,39 @@ internal data class StoredFeatured(
     val playlistId: String,
     val title: String,
     val thumbnailUrl: String? = null,
+    val maskUri: String? = null,
 )
 
 internal fun encodeCustomFeatured(list: List<FeaturedPlaylist>): String =
     FeaturedJson.encodeToString(
         ListSerializer(StoredFeatured.serializer()),
-        list.map { StoredFeatured(it.playlistId, it.title, it.thumbnailUrl) },
+        list.map { StoredFeatured(it.playlistId, it.title, it.thumbnailUrl, it.maskUri) },
     )
 
 internal fun decodeCustomFeatured(raw: String?): List<FeaturedPlaylist> {
     if (raw.isNullOrBlank()) return emptyList()
     return runCatching {
         FeaturedJson.decodeFromString(ListSerializer(StoredFeatured.serializer()), raw)
-            .map { FeaturedPlaylist(it.playlistId, it.title, isDefault = false, thumbnailUrl = it.thumbnailUrl) }
+            .map {
+                FeaturedPlaylist(
+                    playlistId = it.playlistId,
+                    title = it.title,
+                    isDefault = false,
+                    thumbnailUrl = it.thumbnailUrl,
+                    maskUri = it.maskUri,
+                )
+            }
     }.getOrDefault(emptyList())
+}
+
+private val MaskOverridesSerializer = MapSerializer(String.serializer(), String.serializer())
+
+internal fun encodeMaskOverrides(map: Map<String, String>): String =
+    FeaturedJson.encodeToString(MaskOverridesSerializer, map)
+
+internal fun decodeMaskOverrides(raw: String?): Map<String, String> {
+    if (raw.isNullOrBlank()) return emptyMap()
+    return runCatching {
+        FeaturedJson.decodeFromString(MaskOverridesSerializer, raw)
+    }.getOrDefault(emptyMap())
 }

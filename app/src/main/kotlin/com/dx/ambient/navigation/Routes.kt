@@ -24,10 +24,18 @@ object Routes {
     /** Optional, isolated YouTube hub (login wall → the user's playlists). */
     const val YOUTUBE = "youtube"
 
-    /** Plays a chosen YouTube playlist via the official IFrame player. */
-    const val YOUTUBE_PLAYER = "youtube/player/{playlistId}"
-    fun youtubePlayer(playlistId: String) = "youtube/player/$playlistId"
+    /** Plays a chosen YouTube playlist via the official IFrame player, optionally masked. */
+    const val YOUTUBE_PLAYER = "youtube/player/{playlistId}?mask={mask}"
+    fun youtubePlayer(playlistId: String, maskUri: String? = null): String {
+        val base = "youtube/player/$playlistId"
+        return if (maskUri.isNullOrBlank()) {
+            base
+        } else {
+            "$base?mask=${android.net.Uri.encode(maskUri)}"
+        }
+    }
 
     const val ARG_SCENE_ID = "sceneId"
     const val ARG_PLAYLIST_ID = "playlistId"
+    const val ARG_MASK = "mask"
 }

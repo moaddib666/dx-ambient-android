@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -55,7 +56,8 @@ import com.dx.ambient.youtube.featured.FeaturedPlaylist
  */
 @Composable
 fun YouTubeTabScreen(
-    onPlayPlaylist: (String) -> Unit,
+    /** Play a playlist; the second argument is an optional mask URI to composite over it. */
+    onPlayPlaylist: (String, String?) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -87,10 +89,29 @@ fun YouTubeTabScreen(
         Column(modifier = Modifier.fillMaxSize().padding(rememberScreenPadding())) {
             SectionHeader(title = "YouTube", subtitle = "Play your YouTube playlists")
 
+            // Long-press a featured card to choose its mask.
+            var maskPickerFor by remember {
+                androidx.compose.runtime.mutableStateOf<FeaturedPlaylist?>(null)
+            }
+
             FeaturedRail(
                 state = featuredState,
-                onPlay = onPlayPlaylist,
+                onPlay = { item -> onPlayPlaylist(item.playlistId, item.maskUri) },
+                onPickMask = { maskPickerFor = it },
             )
+
+            maskPickerFor?.let { target ->
+                MaskPickerDialog(
+                    title = target.title,
+                    masks = featuredViewModel.bundledMasks(),
+                    selectedUri = target.maskUri,
+                    onSelect = { uri ->
+                        featuredViewModel.setMask(target.playlistId, uri)
+                        maskPickerFor = null
+                    },
+                    onDismiss = { maskPickerFor = null },
+                )
+            }
 
             when (val s = state) {
                 YouTubeUiState.Unsupported -> CenteredMessage(
@@ -109,7 +130,7 @@ fun YouTubeTabScreen(
                         PlaylistGrid(
                             playlists = s.items,
                             featuredIds = featuredState.featuredIds,
-                            onPlay = onPlayPlaylist,
+                            onPlay = { id -> onPlayPlaylist(id, null) },
                             onToggleFeatured = featuredViewModel::toggleFeatured,
                         )
                     }
@@ -178,7 +199,8 @@ private fun ErrorView(message: String, onRetry: () -> Unit) {
 @Composable
 private fun FeaturedRail(
     state: FeaturedUiState,
-    onPlay: (String) -> Unit,
+    onPlay: (FeaturedPlaylist) -> Unit,
+    onPickMask: (FeaturedPlaylist) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (state.items.isEmpty()) return
@@ -191,6 +213,12 @@ private fun FeaturedRail(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
+            } else {
+                Text(
+                    text = "  long-press a card to choose its mask",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
             }
         }
         androidx.compose.foundation.lazy.LazyRow(
@@ -202,9 +230,101 @@ private fun FeaturedRail(
                 FeaturedCard(
                     item = item,
                     enabled = state.available,
-                    onClick = { if (state.available) onPlay(item.playlistId) },
+                    onClick = { if (state.available) onPlay(item) },
+                    onLongClick = { onPickMask(item) },
                 )
             }
+        }
+    }
+}
+
+/** Simple gallery dialog: pick a bundled mask (or none) for a featured playlist. */
+@Composable
+private fun MaskPickerDialog(
+    title: String,
+    masks: List<Pair<String, String>>,
+    selectedUri: String?,
+    onSelect: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .background(
+                    color = Color(0xFF12161B).copy(alpha = 0.97f),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                )
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(text = "Mask for $title", style = MaterialTheme.typography.titleMedium)
+            androidx.compose.foundation.lazy.LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(count = masks.size + 1) { index ->
+                    if (index == 0) {
+                        MaskOptionTile(
+                            label = "No mask",
+                            maskUri = null,
+                            selected = selectedUri == null,
+                            onClick = { onSelect(null) },
+                        )
+                    } else {
+                        val (label, uri) = masks[index - 1]
+                        MaskOptionTile(
+                            label = label,
+                            maskUri = uri,
+                            selected = selectedUri == uri,
+                            onClick = { onSelect(uri) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MaskOptionTile(
+    label: String,
+    maskUri: String?,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .width(150.dp)
+            .touchClickable(onClick = onClick),
+    ) {
+        Column {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(0xFF24455A), Color(0xFF1B5A4A), Color(0xFF53306B)),
+                            ),
+                        ),
+                )
+                if (maskUri != null) {
+                    AsyncImage(
+                        model = maskUri,
+                        contentDescription = label,
+                        contentScale = ContentScale.FillBounds,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+            Text(
+                text = if (selected) "✓ $label" else label,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (selected) Color(0xFF00E5FF) else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(8.dp),
+            )
         }
     }
 }
@@ -214,12 +334,14 @@ private fun FeaturedCard(
     item: FeaturedPlaylist,
     enabled: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
     Card(
         onClick = onClick,
+        onLongClick = onLongClick,
         modifier = Modifier
             .width(220.dp)
-            .touchClickable(onClick = onClick)
+            .touchClickable(onClick = onClick, onLongClick = onLongClick)
             .alpha(if (enabled) 1f else 0.45f),
         colors = CardDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.06f),

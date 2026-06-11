@@ -12,6 +12,7 @@ import com.dx.ambient.domain.model.Scene
 import com.dx.ambient.domain.repository.MediaLibraryRepository
 import com.dx.ambient.domain.repository.SceneRepository
 import com.dx.ambient.domain.usecase.SaveSceneUseCase
+import com.dx.ambient.playback.AmbientPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,6 +37,8 @@ class SceneEditorViewModel @Inject constructor(
     private val sceneRepository: SceneRepository,
     mediaLibraryRepository: MediaLibraryRepository,
     private val saveScene: SaveSceneUseCase,
+    /** Drives the live mask preview: the draft plays full-screen with the mask overlaid. */
+    val player: AmbientPlayer,
 ) : ViewModel() {
 
     /** Pickable local videos for the picture source. */
@@ -116,6 +119,31 @@ class SceneEditorViewModel @Inject constructor(
     /** Remove the mask, keeping the performance-safe fast render path (MVP feature 8). */
     fun clearMask() {
         _draft.value = _draft.value.copy(mask = Mask.NONE)
+    }
+
+    /**
+     * Steps the draft mask forward/backward through `[No mask] + masks`, wrapping at
+     * both ends — D-pad left/right and horizontal swipes in the live preview use this.
+     */
+    fun cycleMask(direction: Int) {
+        val options: List<LibraryMedia?> = listOf<LibraryMedia?>(null) + masks.value
+        if (options.size < 2) return
+        val currentUri = _draft.value.mask.uri.takeIf { it.isNotEmpty() }
+        val index = options.indexOfFirst { it?.uri == currentUri }.coerceAtLeast(0)
+        val next = options[(index + direction + options.size) % options.size]
+        _draft.value = _draft.value.copy(
+            mask = next?.let { Mask(uri = it.uri, displayName = it.displayName) } ?: Mask.NONE,
+        )
+    }
+
+    /** Starts draft playback for the full-screen mask preview. */
+    fun startMaskPreview() {
+        player.load(_draft.value)
+    }
+
+    /** Stops preview playback when the overlay closes. */
+    fun stopMaskPreview() {
+        player.stop()
     }
 
     /** Set output brightness, clamped to a valid 0f..1f multiplier. */

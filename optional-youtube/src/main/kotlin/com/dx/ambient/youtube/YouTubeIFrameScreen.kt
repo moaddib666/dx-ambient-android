@@ -93,6 +93,8 @@ fun YouTubeIFrameScreen(
     playlistId: String?,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Optional alpha mask composited over the player (ambient framing, non-interactive). */
+    maskUri: String? = null,
 ) {
     // No source configured (e.g. the host hasn't wired a picker yet): show a calm placeholder
     // instead of an empty player, while still honoring BACK.
@@ -211,6 +213,17 @@ fun YouTubeIFrameScreen(
             },
             update = { /* No reactive updates: html is keyed via remember(). */ },
         )
+
+        // Ambient alpha mask over the player. Purely decorative and not interactive —
+        // it draws no pointer handlers, so taps still reach the player beneath it.
+        if (!maskUri.isNullOrBlank()) {
+            coil.compose.AsyncImage(
+                model = maskUri,
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
 
         // Friendly overlay when the embed is blocked (e.g. Media Integrity on emulators /
         // uncertified devices, or every video in the playlist disables embedding).
