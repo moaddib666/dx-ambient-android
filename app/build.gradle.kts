@@ -41,6 +41,10 @@ android {
         versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // v1 ships local-first only: the YouTube mode stays hidden until real
+        // OAuth sign-in replaces the demo playlist (docs/ROADMAP.md M4/M6).
+        buildConfigField("boolean", "YOUTUBE_MODE_ENABLED", "false")
     }
 
     signingConfigs {
@@ -73,6 +77,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     compileOptions {

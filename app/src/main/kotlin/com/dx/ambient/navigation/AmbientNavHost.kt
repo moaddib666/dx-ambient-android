@@ -10,6 +10,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.dx.ambient.BuildConfig
 import com.dx.ambient.boot.BootDecision
 import com.dx.ambient.boot.BootScreen
 import com.dx.ambient.boot.BootViewModel
@@ -63,7 +64,11 @@ fun AmbientNavHost() {
                 onCreateScene = { navController.navigate(Routes.EDITOR_NEW) },
                 onOpenLibrary = { navController.navigate(Routes.LIBRARY) },
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                onOpenYouTube = { navController.navigate(Routes.YOUTUBE) },
+                onOpenYouTube = if (BuildConfig.YOUTUBE_MODE_ENABLED) {
+                    { navController.navigate(Routes.YOUTUBE) }
+                } else {
+                    null
+                },
             )
         }
 
