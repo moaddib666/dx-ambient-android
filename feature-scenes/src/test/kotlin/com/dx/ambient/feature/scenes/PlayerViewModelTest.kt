@@ -1,5 +1,7 @@
 package com.dx.ambient.feature.scenes
 
+import com.dx.ambient.domain.catalog.MaskCatalog
+import com.dx.ambient.domain.model.Mask
 import com.dx.ambient.domain.playback.PlaybackState
 import com.dx.ambient.domain.playback.PlaybackStatus
 import com.dx.ambient.domain.usecase.ResolveEffectiveSceneUseCase
@@ -23,6 +25,9 @@ class PlayerViewModelTest {
             sceneRepository = FakeSceneRepository(),
             settingsRepository = FakeSettingsRepository(),
             resolveEffectiveScene = ResolveEffectiveSceneUseCase(),
+            maskCatalog = object : MaskCatalog {
+                override suspend fun masks(): List<Mask> = emptyList()
+            },
             player = player,
         )
         return vm to player

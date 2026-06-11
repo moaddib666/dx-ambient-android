@@ -38,8 +38,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.dx.ambient.domain.playback.PlaybackStatus
 import com.dx.ambient.rendering.AmbientStage
 import com.dx.ambient.rendering.R
+import com.dx.ambient.rendering.components.PlayerPauseOverlay
 import kotlinx.coroutines.delay
 
 /**
@@ -54,9 +56,12 @@ fun PlayerScreen(
     sceneId: String,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
+    /** ◀ ▶ / swipe scene switching, owned by the route (works across player types). */
+    onSwitchScene: ((Int) -> Unit)? = null,
 ) {
     val viewModel: PlayerViewModel = hiltViewModel()
     val uiState by viewModel.state.collectAsStateWithLifecycle()
+    val playbackState by viewModel.player.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(sceneId) {
         viewModel.bind(sceneId)
@@ -110,11 +115,22 @@ fun PlayerScreen(
                         true
                     }
                     Key.DirectionLeft -> {
-                        viewModel.previous()
+                        onSwitchScene?.invoke(-1)
                         true
                     }
                     Key.DirectionRight -> {
-                        viewModel.next()
+                        onSwitchScene?.invoke(1)
+                        true
+                    }
+                    // Live mask tuning: ▲ ▼ cycles the mask and persists it on the scene.
+                    Key.DirectionUp -> {
+                        viewModel.cycleMask(-1)
+                        overlayVisible = true
+                        true
+                    }
+                    Key.DirectionDown -> {
+                        viewModel.cycleMask(1)
+                        overlayVisible = true
                         true
                     }
                     else -> false
@@ -137,8 +153,8 @@ fun PlayerScreen(
                     onDragEnd = {
                         val threshold = 96.dp.toPx()
                         when {
-                            dragTotal <= -threshold -> viewModel.next()
-                            dragTotal >= threshold -> viewModel.previous()
+                            dragTotal <= -threshold -> onSwitchScene?.invoke(1)
+                            dragTotal >= threshold -> onSwitchScene?.invoke(-1)
                         }
                     },
                 ) { _, dragAmount -> dragTotal += dragAmount }
@@ -165,6 +181,16 @@ fun PlayerScreen(
                 scene = scene,
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // Designed pause state (not a dead frame): dim the picture and surface the
+            // scene identity, live mask control and remote hints.
+            if (playbackState.status == PlaybackStatus.PAUSED) {
+                PlayerPauseOverlay(
+                    sceneName = scene.name,
+                    maskName = scene.mask.displayName.takeIf { scene.hasMask },
+                    opaque = false,
+                )
+            }
 
             if (overlayVisible) {
                 Surface(

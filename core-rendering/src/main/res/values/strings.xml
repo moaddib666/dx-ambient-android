@@ -181,4 +181,9 @@
     <string name="home_hide">Hide</string>
     <string name="home_show">Show</string>
     <string name="home_hidden_badge">Hidden</string>
+
+    <!-- Player pause/loading overlay -->
+    <string name="player_paused">Paused</string>
+    <string name="player_pause_hint">OK play/pause · ◀ ▶ scene · ▲ ▼ mask · BACK exit</string>
+    <string name="player_mask_format">Mask: %1$s</string>
 </resources>

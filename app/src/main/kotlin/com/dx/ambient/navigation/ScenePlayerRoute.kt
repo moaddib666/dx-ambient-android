@@ -16,6 +16,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import com.dx.ambient.domain.catalog.MaskCatalog
+import com.dx.ambient.domain.model.Mask
 import com.dx.ambient.domain.model.MediaSource
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
@@ -29,6 +31,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -37,6 +40,9 @@ import javax.inject.Inject
  * [PlayerScreen]; scenes whose picture source is YouTube render through the official
  * IFrame player with the scene's mask, brightness, opacity, scale and (optionally) a
  * separate ExoPlayer soundtrack — the embed itself is then muted, never extracted.
+ *
+ * Scene switching (◀ ▶ / swipes) lives HERE so it works uniformly across player types,
+ * including YouTube ↔ regular transitions.
  */
 @Composable
 fun ScenePlayerRoute(
@@ -53,7 +59,11 @@ fun ScenePlayerRoute(
         state.loading -> Box(modifier = Modifier.fillMaxSize().background(Color.Black))
         scene != null && scene.videoSource.isYouTube ->
             YouTubeSceneScreen(scene = scene, viewModel = viewModel, onExit = onExit)
-        else -> PlayerScreen(sceneId = sceneId, onExit = onExit)
+        else -> PlayerScreen(
+            sceneId = scene?.id ?: sceneId,
+            onExit = onExit,
+            onSwitchScene = viewModel::switchScene,
+        )
     }
 }
 
@@ -94,17 +104,26 @@ private fun YouTubeSceneScreen(
         videoAlpha = scene.videoAlpha,
         videoScale = scene.videoScale,
         muted = scene.muted || hasSeparateAudio,
+        sceneTitle = scene.name,
+        maskName = scene.mask.displayName.takeIf { scene.hasMask },
+        onSwitchScene = viewModel::switchScene,
+        onCycleMask = viewModel::cycleMask,
     )
 }
 
 private val MediaSource.isPlayableAudio: Boolean
     get() = type == MediaSourceType.LOCAL_AUDIO || type == MediaSourceType.STREAM
 
-/** Loads the scene to route it to the right player; owns the YouTube-scene soundtrack. */
+/**
+ * Loads the scene to route it to the right player, owns prev/next switching across ALL
+ * visible scenes (any source type), live mask cycling for YouTube scenes, and the
+ * YouTube-scene soundtrack.
+ */
 @HiltViewModel
 class SceneRouteViewModel @Inject constructor(
     private val sceneRepository: SceneRepository,
     private val settingsRepository: SettingsRepository,
+    private val maskCatalog: MaskCatalog,
     private val player: AmbientPlayer,
 ) : ViewModel() {
 
@@ -115,6 +134,20 @@ class SceneRouteViewModel @Inject constructor(
 
     private var audioStarted = false
 
+    /** Home-row order, hidden scenes excluded — the ◀ ▶ switching ring. */
+    private var orderedScenes: List<Scene> = emptyList()
+
+    /** Lazily loaded mask options for live ▲ ▼ cycling on YouTube scenes. */
+    private var maskOptions: List<Mask>? = null
+
+    init {
+        viewModelScope.launch {
+            sceneRepository.observeScenes().collectLatest { scenes ->
+                orderedScenes = scenes.filter { !it.hidden }
+            }
+        }
+    }
+
     fun bind(sceneId: String) {
         viewModelScope.launch {
             val scene = sceneRepository.getScene(sceneId)
@@ -124,6 +157,38 @@ class SceneRouteViewModel @Inject constructor(
                 settingsRepository.setLastSceneId(scene.id)
             }
             _state.value = State(scene = scene, loading = false)
+        }
+    }
+
+    /** ◀ ▶ across every visible scene, regardless of source type, wrapping around. */
+    fun switchScene(direction: Int) {
+        val current = _state.value.scene ?: return
+        val list = orderedScenes
+        if (list.size < 2) return
+        val index = list.indexOfFirst { it.id == current.id }.coerceAtLeast(0)
+        val target = list[(index + direction + list.size) % list.size]
+        if (target.id != current.id) {
+            stopSceneAudio()
+            bind(target.id)
+        }
+    }
+
+    /**
+     * Live mask tuning for YouTube scenes (▲ ▼): applies immediately to the playing
+     * scene and persists on the saved scene — same behaviour as the regular player.
+     */
+    fun cycleMask(direction: Int) {
+        viewModelScope.launch {
+            val current = _state.value.scene ?: return@launch
+            val catalog = maskOptions ?: maskCatalog.masks().also { maskOptions = it }
+            val options = listOf(Mask.NONE) + catalog
+            if (options.size < 2) return@launch
+            val index = options.indexOfFirst { it.uri == current.mask.uri }.coerceAtLeast(0)
+            val next = options[(index + direction + options.size) % options.size]
+            sceneRepository.getScene(current.id)?.let { raw ->
+                sceneRepository.upsertScene(raw.copy(mask = next))
+            }
+            _state.value = _state.value.copy(scene = current.copy(mask = next))
         }
     }
 

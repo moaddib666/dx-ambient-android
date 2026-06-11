@@ -150,4 +150,8 @@
     <string name="home_hide">Ausblenden</string>
     <string name="home_show">Einblenden</string>
     <string name="home_hidden_badge">Ausgeblendet</string>
+
+    <string name="player_paused">Pausiert</string>
+    <string name="player_pause_hint">OK Wiedergabe/Pause · ◀ ▶ Szene · ▲ ▼ Maske · BACK Beenden</string>
+    <string name="player_mask_format">Maske: %1$s</string>
 </resources>

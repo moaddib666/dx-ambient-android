@@ -2,6 +2,8 @@ package com.dx.ambient.feature.scenes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dx.ambient.domain.catalog.MaskCatalog
+import com.dx.ambient.domain.model.Mask
 import com.dx.ambient.domain.model.Scene
 import com.dx.ambient.domain.playback.PlaybackStatus
 import com.dx.ambient.domain.repository.SceneRepository
@@ -14,7 +16,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -38,6 +39,7 @@ class PlayerViewModel @Inject constructor(
     private val sceneRepository: SceneRepository,
     private val settingsRepository: SettingsRepository,
     private val resolveEffectiveScene: ResolveEffectiveSceneUseCase,
+    private val maskCatalog: MaskCatalog,
     /** Exposed so the screen can attach the rendering surface via [com.dx.ambient.rendering.AmbientStage]. */
     val player: AmbientPlayer,
 ) : ViewModel() {
@@ -48,39 +50,31 @@ class PlayerViewModel @Inject constructor(
     private var sleepTimerJob: Job? = null
     private var autoDimJob: Job? = null
 
-    /** Saved scenes in home-grid order, used to resolve the previous/next scene for D-pad swiping. */
-    private var orderedScenes: List<Scene> = emptyList()
-
-    init {
-        viewModelScope.launch {
-            sceneRepository.observeScenes().collectLatest { scenes ->
-                // Hidden scenes are excluded from D-pad switching; YouTube-sourced scenes
-                // play through the IFrame route, not this player, so they are skipped too.
-                orderedScenes = scenes.filter { !it.hidden && !it.videoSource.isYouTube }
-            }
-        }
-    }
+    /** Lazily loaded mask options for live ▲ ▼ cycling. */
+    private var maskOptions: List<Mask>? = null
 
     /** Loads [sceneId], computes its effective form, begins playback and arms the timers. */
     fun bind(sceneId: String) {
         viewModelScope.launch { loadScene(sceneId) }
     }
 
-    /** Switch to the previous scene in the home-grid order, wrapping around (D-pad left). */
-    fun previous() = step(-1)
-
-    /** Switch to the next scene in the home-grid order, wrapping around (D-pad right). */
-    fun next() = step(1)
-
-    private fun step(direction: Int) {
-        val current = _state.value.scene ?: return
-        val list = orderedScenes
-        if (list.size < 2) return
-        val index = list.indexOfFirst { it.id == current.id }
-        if (index < 0) return
-        val target = list[(index + direction + list.size) % list.size]
-        if (target.id != current.id) {
-            viewModelScope.launch { loadScene(target.id) }
+    /**
+     * Live mask tuning (▲ ▼ in the player): steps through `[No mask] + catalog`, applies it
+     * to the playing scene immediately and persists it on the saved scene.
+     */
+    fun cycleMask(direction: Int) {
+        viewModelScope.launch {
+            val current = _state.value.scene ?: return@launch
+            val catalog = maskOptions ?: maskCatalog.masks().also { maskOptions = it }
+            val options = listOf(Mask.NONE) + catalog
+            if (options.size < 2) return@launch
+            val index = options.indexOfFirst { it.uri == current.mask.uri }.coerceAtLeast(0)
+            val next = options[(index + direction + options.size) % options.size]
+            // Persist on the freshly loaded scene, never the effective (settings-resolved) copy.
+            sceneRepository.getScene(current.id)?.let { raw ->
+                sceneRepository.upsertScene(raw.copy(mask = next))
+            }
+            _state.value = _state.value.copy(scene = current.copy(mask = next))
         }
     }
 

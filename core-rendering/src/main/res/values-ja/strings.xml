@@ -149,4 +149,8 @@
     <string name="home_hide">非表示にする</string>
     <string name="home_show">表示する</string>
     <string name="home_hidden_badge">非表示</string>
+
+    <string name="player_paused">一時停止中</string>
+    <string name="player_pause_hint">OK 再生/一時停止 · ◀ ▶ シーン · ▲ ▼ マスク · BACK 終了</string>
+    <string name="player_mask_format">マスク：%1$s</string>
 </resources>

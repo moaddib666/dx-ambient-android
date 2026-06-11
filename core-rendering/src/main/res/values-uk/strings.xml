@@ -152,4 +152,8 @@
     <string name="home_hide">Сховати</string>
     <string name="home_show">Показати</string>
     <string name="home_hidden_badge">Сховано</string>
+
+    <string name="player_paused">Пауза</string>
+    <string name="player_pause_hint">OK відтворення/пауза · ◀ ▶ сцена · ▲ ▼ маска · BACK вихід</string>
+    <string name="player_mask_format">Маска: %1$s</string>
 </resources>

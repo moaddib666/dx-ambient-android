@@ -10,11 +10,13 @@ import com.dx.ambient.data.database.AmbientDatabaseMigrations
 import com.dx.ambient.data.database.dao.MediaDao
 import com.dx.ambient.data.database.dao.SceneDao
 import com.dx.ambient.data.device.AndroidDeviceCapabilityProvider
+import com.dx.ambient.data.repository.MaskCatalogImpl
 import com.dx.ambient.data.repository.MediaLibraryRepositoryImpl
 import com.dx.ambient.data.repository.SceneRepositoryImpl
 import com.dx.ambient.data.repository.SettingsRepositoryImpl
 import com.dx.ambient.data.util.SystemTimeProvider
 import com.dx.ambient.data.util.TimeProvider
+import com.dx.ambient.domain.catalog.MaskCatalog
 import com.dx.ambient.domain.repository.DeviceCapabilityProvider
 import com.dx.ambient.domain.repository.MediaLibraryRepository
 import com.dx.ambient.domain.repository.SceneRepository
@@ -65,6 +67,10 @@ abstract class DataBindsModule {
     @Binds
     @Singleton
     abstract fun bindMediaLibraryRepository(impl: MediaLibraryRepositoryImpl): MediaLibraryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMaskCatalog(impl: MaskCatalogImpl): MaskCatalog
 
     @Binds
     @Singleton

@@ -150,4 +150,8 @@
     <string name="home_hide">Masquer</string>
     <string name="home_show">Afficher</string>
     <string name="home_hidden_badge">Masquée</string>
+
+    <string name="player_paused">En pause</string>
+    <string name="player_pause_hint">OK lecture/pause · ◀ ▶ scène · ▲ ▼ masque · BACK quitter</string>
+    <string name="player_mask_format">Masque : %1$s</string>
 </resources>

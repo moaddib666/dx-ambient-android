@@ -150,4 +150,8 @@
     <string name="home_hide">Ocultar</string>
     <string name="home_show">Mostrar</string>
     <string name="home_hidden_badge">Oculta</string>
+
+    <string name="player_paused">Pausado</string>
+    <string name="player_pause_hint">OK reproduzir/pausar · ◀ ▶ cena · ▲ ▼ máscara · BACK sair</string>
+    <string name="player_mask_format">Máscara: %1$s</string>
 </resources>
