@@ -1,5 +1,6 @@
 package com.dx.ambient.feature.library
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,9 +27,11 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -75,6 +78,20 @@ fun LibraryScreen(
         }
     }
 
+    // Some TV builds ship no documents UI: either nothing resolves OPEN_DOCUMENT_TREE, or
+    // Android TV's framework-package-stubs "resolves" it with a stub that only shows a
+    // "You don't have an app that can do this" toast. Both count as unsupported, so the
+    // import affordance is replaced by a hint.
+    val context = LocalContext.current
+    val canImportFolders = remember {
+        val resolved = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+            .resolveActivity(context.packageManager)
+        resolved != null && !resolved.packageName.contains("frameworkpackagestubs")
+    }
+    val launchFolderPicker: () -> Unit = {
+        runCatching { folderPicker.launch(null) }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -117,33 +134,49 @@ fun LibraryScreen(
                 .fillMaxWidth()
                 .padding(bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconTextButton(
-                text = if (state.isImporting) {
-                    stringResource(R.string.library_importing)
-                } else {
-                    stringResource(R.string.library_import_folder)
-                },
-                icon = Icons.Filled.Add,
-                onClick = { folderPicker.launch(null) },
-            )
+            if (canImportFolders) {
+                IconTextButton(
+                    text = if (state.isImporting) {
+                        stringResource(R.string.library_importing)
+                    } else {
+                        stringResource(R.string.library_import_folder)
+                    },
+                    icon = Icons.Filled.Add,
+                    onClick = launchFolderPicker,
+                )
+            }
             IconTextButton(
                 text = stringResource(R.string.library_refresh),
                 icon = Icons.Filled.Refresh,
                 onClick = viewModel::refresh,
             )
+            if (!canImportFolders) {
+                Text(
+                    text = stringResource(R.string.library_import_unsupported),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+            }
         }
 
         if (state.folders.isEmpty()) {
             EmptyState(
                 title = stringResource(R.string.library_empty_title),
-                message = stringResource(R.string.library_empty_message),
+                message = if (canImportFolders) {
+                    stringResource(R.string.library_empty_message)
+                } else {
+                    stringResource(R.string.library_import_unsupported)
+                },
                 action = {
-                    IconTextButton(
-                        text = stringResource(R.string.library_import_folder),
-                        icon = Icons.Filled.Add,
-                        onClick = { folderPicker.launch(null) },
-                    )
+                    if (canImportFolders) {
+                        IconTextButton(
+                            text = stringResource(R.string.library_import_folder),
+                            icon = Icons.Filled.Add,
+                            onClick = launchFolderPicker,
+                        )
+                    }
                 },
             )
         } else {
