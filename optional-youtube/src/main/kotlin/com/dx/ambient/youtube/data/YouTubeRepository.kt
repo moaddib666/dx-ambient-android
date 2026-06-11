@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.URLEncoder
 import javax.inject.Inject
 
 /**
@@ -18,34 +19,78 @@ import javax.inject.Inject
  */
 class YouTubeRepository @Inject constructor() {
 
-    private val json = Json { ignoreUnknownKeys = true }
-
     /** Fetches the user's playlists. [accessToken] is a `youtube.readonly` OAuth token. */
     suspend fun fetchMyPlaylists(accessToken: String): List<YouTubePlaylist> =
         withContext(Dispatchers.IO) {
-            val url = URL(
+            val body = getJson(
                 "https://www.googleapis.com/youtube/v3/playlists" +
                     "?part=snippet,contentDetails&mine=true&maxResults=50",
+                accessToken,
             )
-            val conn = (url.openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"
-                setRequestProperty("Authorization", "Bearer $accessToken")
-                setRequestProperty("Accept", "application/json")
-                connectTimeout = 15_000
-                readTimeout = 15_000
-            }
-            try {
-                val code = conn.responseCode
-                if (code !in 200..299) {
-                    val err = conn.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-                    throw IOException("YouTube API HTTP $code: ${err.take(300)}")
-                }
-                val body = conn.inputStream.bufferedReader().use { it.readText() }
-                json.decodeFromString(PlaylistListResponse.serializer(), body).items.map { it.toDomain() }
-            } finally {
-                conn.disconnect()
-            }
+            AmbientYouTubeJson.decodeFromString(PlaylistListResponse.serializer(), body)
+                .items.map { it.toDomain() }
         }
+
+    /**
+     * Resolves a playlist into its video ids via the *authorized* Data API.
+     *
+     * The anonymous IFrame embed cannot open private/unlisted playlists
+     * (`listType: 'playlist'` fails with embed error 150/152), but the OAuth
+     * token can read them — so the player is fed concrete video ids instead.
+     * Capped at [maxVideos] (the IFrame array-playlist limit is ~200).
+     */
+    suspend fun fetchPlaylistVideoIds(
+        accessToken: String,
+        playlistId: String,
+        maxVideos: Int = 200,
+    ): List<String> = withContext(Dispatchers.IO) {
+        val ids = mutableListOf<String>()
+        var pageToken: String? = null
+        do {
+            val body = getJson(
+                "https://www.googleapis.com/youtube/v3/playlistItems" +
+                    "?part=contentDetails&maxResults=50" +
+                    "&playlistId=${URLEncoder.encode(playlistId, "UTF-8")}" +
+                    (pageToken?.let { "&pageToken=${URLEncoder.encode(it, "UTF-8")}" } ?: ""),
+                accessToken,
+            )
+            val (pageIds, nextToken) = parsePlaylistItemIds(body)
+            ids += pageIds
+            pageToken = nextToken
+        } while (pageToken != null && ids.size < maxVideos)
+        ids.take(maxVideos)
+    }
+
+    private fun getJson(urlString: String, accessToken: String): String {
+        val conn = (URL(urlString).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            setRequestProperty("Authorization", "Bearer $accessToken")
+            setRequestProperty("Accept", "application/json")
+            connectTimeout = 15_000
+            readTimeout = 15_000
+        }
+        try {
+            val code = conn.responseCode
+            if (code !in 200..299) {
+                val err = conn.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                throw IOException("YouTube API HTTP $code: ${err.take(300)}")
+            }
+            return conn.inputStream.bufferedReader().use { it.readText() }
+        } finally {
+            conn.disconnect()
+        }
+    }
+}
+
+internal val AmbientYouTubeJson = Json { ignoreUnknownKeys = true }
+
+/** Parses one `playlistItems.list` page into (video ids, nextPageToken). Exposed for tests. */
+internal fun parsePlaylistItemIds(body: String): Pair<List<String>, String?> {
+    val response = AmbientYouTubeJson.decodeFromString(PlaylistItemsResponse.serializer(), body)
+    val ids = response.items.mapNotNull { item ->
+        item.contentDetails?.videoId?.takeIf { it.isNotBlank() }
+    }
+    return ids to response.nextPageToken
 }
 
 private fun PlaylistItem.toDomain() = YouTubePlaylist(
@@ -82,3 +127,15 @@ private data class Thumb(val url: String = "")
 
 @Serializable
 private data class ContentDetails(@SerialName("itemCount") val itemCount: Int = 0)
+
+@Serializable
+internal data class PlaylistItemsResponse(
+    val items: List<PlaylistVideoItem> = emptyList(),
+    val nextPageToken: String? = null,
+)
+
+@Serializable
+internal data class PlaylistVideoItem(val contentDetails: PlaylistVideoDetails? = null)
+
+@Serializable
+internal data class PlaylistVideoDetails(val videoId: String? = null)

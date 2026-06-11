@@ -53,14 +53,18 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.dx.ambient.rendering.components.PrimaryButton
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.dx.ambient.youtube.ui.YouTubePlayerViewModel
 
 /**
  * Renders a YouTube video or playlist using the official IFrame Player API
@@ -97,9 +101,28 @@ fun YouTubeIFrameScreen(
         return
     }
 
+    // Private/unlisted playlists are unreachable for the anonymous embed (error
+    // 150/152): resolve the playlist into video ids through the authorized Data
+    // API first, and only fall back to the bare `listType` embed when that fails.
+    var resolvedVideoIds: List<String>? = null
+    if (!playlistId.isNullOrBlank()) {
+        val playerViewModel: YouTubePlayerViewModel = hiltViewModel()
+        val resolution by playerViewModel.resolution.collectAsStateWithLifecycle()
+        LaunchedEffect(playlistId) { playerViewModel.resolve(playlistId) }
+        when (val r = resolution) {
+            YouTubePlayerViewModel.Resolution.Resolving -> {
+                YouTubeMessage(message = "Loading playlist…", onExit = onExit, modifier = modifier)
+                return
+            }
+            is YouTubePlayerViewModel.Resolution.Ready -> resolvedVideoIds = r.videoIds
+        }
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val html = remember(videoId, playlistId) { buildPlayerHtml(videoId, playlistId) }
+    val html = remember(videoId, playlistId, resolvedVideoIds) {
+        buildPlayerHtml(videoId, playlistId, resolvedVideoIds)
+    }
 
     // Holds the live WebView so the lifecycle observer / onDispose teardown can
     // reach it. Scoped to this composition instance.
@@ -262,13 +285,26 @@ fun YouTubeIFrameScreen(
  * allows (`rel: 0`), and the iframe fills 100% width/height so it always
  * exceeds the 200x200 px embed minimum.
  */
-private fun buildPlayerHtml(videoId: String?, playlistId: String?): String {
+private fun buildPlayerHtml(
+    videoId: String?,
+    playlistId: String?,
+    resolvedVideoIds: List<String>? = null,
+): String {
     val safeVideoId = (videoId ?: "").escapeForJs()
     val safePlaylistId = (playlistId ?: "").escapeForJs()
 
-    // Playlist takes precedence when present.
+    // Video ids resolved via the authorized Data API, loaded as an array
+    // playlist — works for private/unlisted playlists the anonymous embed
+    // can't open by id. Ids are [A-Za-z0-9_-], enforced here defensively.
+    val idsJsArray = resolvedVideoIds
+        ?.map { id -> id.filter { it.isLetterOrDigit() || it == '-' || it == '_' } }
+        ?.filter { it.isNotBlank() }
+        ?.takeIf { it.isNotEmpty() }
+        ?.joinToString(",") { "'$it'" }
+
+    // Playlist takes precedence when present; resolved ids beat the bare embed.
     val playerVarsBody =
-        if (!playlistId.isNullOrEmpty()) {
+        if (idsJsArray == null && !playlistId.isNullOrEmpty()) {
             """
             'listType': 'playlist',
             'list': '$safePlaylistId',
@@ -286,12 +322,20 @@ private fun buildPlayerHtml(videoId: String?, playlistId: String?): String {
             """.trimIndent()
         }
 
-    // videoId is only supplied when there is no playlist.
+    // videoId is only supplied when there is no playlist at all.
     val videoIdLine =
-        if (playlistId.isNullOrEmpty() && !videoId.isNullOrEmpty()) {
+        if (playlistId.isNullOrEmpty() && resolvedVideoIds == null && !videoId.isNullOrEmpty()) {
             "'videoId': '$safeVideoId',"
         } else {
             ""
+        }
+
+    // Array playlists start via loadPlaylist; everything else autoplay-starts directly.
+    val onReadyBody =
+        if (idsJsArray != null) {
+            "e.target.loadPlaylist([$idsJsArray]);"
+        } else {
+            "e.target.playVideo();"
         }
 
     return """
@@ -342,7 +386,7 @@ private fun buildPlayerHtml(videoId: String?, playlistId: String?): String {
                   },
                   host: 'https://www.youtube.com',
                   events: {
-                    'onReady': function (e) { e.target.playVideo(); },
+                    'onReady': function (e) { $onReadyBody },
                     'onStateChange': function (e) {
                       if (e.data === YT.PlayerState.PLAYING && window.__watchdog) {
                         clearTimeout(window.__watchdog);
