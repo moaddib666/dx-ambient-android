@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Locales the app ships translations for (per-app language picker on Android 13+).
+  Keep in sync with the values-<locale>/ folders in core-rendering/src/main/res/
+  (see CLAUDE.md "Localization").
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="uk" />
+    <locale android:name="de" />
+    <locale android:name="es" />
+    <locale android:name="fr" />
+    <locale android:name="pt-BR" />
+    <locale android:name="ja" />
+</locale-config>

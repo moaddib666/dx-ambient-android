@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +21,7 @@ import androidx.tv.material3.Card
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.dx.ambient.domain.model.ProjectorSettings
+import com.dx.ambient.rendering.R
 import com.dx.ambient.rendering.components.PrimaryButton
 import com.dx.ambient.rendering.components.SectionHeader
 import com.dx.ambient.rendering.components.rememberScreenPadding
@@ -54,43 +56,47 @@ fun SettingsScreen(
     ) {
         item {
             SectionHeader(
-                title = "Settings",
-                subtitle = "Projector behaviour, dimming and sleep (features 8 & 9)",
+                title = stringResource(R.string.settings_title),
+                subtitle = stringResource(R.string.settings_subtitle),
             )
         }
 
         item {
             ToggleRow(
-                label = "Masks & overlays",
+                label = stringResource(R.string.settings_masks_overlays),
                 value = settings.masksEnabled,
             ) { checked -> viewModel.update { it.copy(masksEnabled = checked) } }
         }
 
         item {
             ToggleRow(
-                label = "Performance-safe mode (forces masks off)",
+                label = stringResource(R.string.settings_performance_safe),
                 value = settings.performanceSafeMode,
             ) { checked -> viewModel.update { it.copy(performanceSafeMode = checked) } }
         }
 
         item {
             ToggleRow(
-                label = "Burn-in protection",
+                label = stringResource(R.string.settings_burn_in),
                 value = settings.burnInProtection,
             ) { checked -> viewModel.update { it.copy(burnInProtection = checked) } }
         }
 
         item {
             ToggleRow(
-                label = "Resume last scene on launch",
+                label = stringResource(R.string.settings_resume_last),
                 value = settings.resumeLastSceneOnLaunch,
             ) { checked -> viewModel.update { it.copy(resumeLastSceneOnLaunch = checked) } }
         }
 
         item {
             StepperRow(
-                label = "Auto-dim after",
-                valueText = if (settings.dimAfterMinutes == 0) "Off" else "${settings.dimAfterMinutes} min",
+                label = stringResource(R.string.settings_auto_dim_after),
+                valueText = if (settings.dimAfterMinutes == 0) {
+                    stringResource(R.string.value_off)
+                } else {
+                    stringResource(R.string.minutes_format, settings.dimAfterMinutes)
+                },
                 onDecrease = {
                     viewModel.update {
                         it.copy(dimAfterMinutes = (it.dimAfterMinutes - 5).coerceIn(0, 120))
@@ -106,8 +112,11 @@ fun SettingsScreen(
 
         item {
             StepperRow(
-                label = "Dim level",
-                valueText = "${(settings.dimBrightness * 100).toInt()}%",
+                label = stringResource(R.string.settings_dim_level),
+                valueText = stringResource(
+                    R.string.common_percent,
+                    (settings.dimBrightness * 100).toInt(),
+                ),
                 onDecrease = {
                     viewModel.update {
                         it.copy(dimBrightness = (it.dimBrightness - 0.05f).coerceIn(0f, 1f))
@@ -123,8 +132,12 @@ fun SettingsScreen(
 
         item {
             StepperRow(
-                label = "Sleep timer",
-                valueText = if (settings.sleepTimerMinutes == 0) "Off" else "${settings.sleepTimerMinutes} min",
+                label = stringResource(R.string.settings_sleep_timer),
+                valueText = if (settings.sleepTimerMinutes == 0) {
+                    stringResource(R.string.value_off)
+                } else {
+                    stringResource(R.string.minutes_format, settings.sleepTimerMinutes)
+                },
                 onDecrease = {
                     viewModel.update {
                         it.copy(sleepTimerMinutes = (it.sleepTimerMinutes - 10).coerceIn(0, 240))
@@ -152,9 +165,12 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp, vertical = 20.dp),
                 ) {
-                    Text("Device info & capabilities", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "View what this device can do (feature 10)",
+                        stringResource(R.string.settings_device_info),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Text(
+                        stringResource(R.string.settings_device_info_sub),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     )
@@ -189,7 +205,11 @@ private fun ToggleRow(
         ) {
             Text(text = label, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = if (value) "ON" else "OFF",
+                text = if (value) {
+                    stringResource(R.string.common_on)
+                } else {
+                    stringResource(R.string.common_off)
+                },
                 style = MaterialTheme.typography.titleMedium,
                 color = if (value) {
                     MaterialTheme.colorScheme.primary

@@ -29,7 +29,14 @@ sealed interface YouTubeUiState {
     data object SignedOut : YouTubeUiState
     data object Loading : YouTubeUiState
     data class Playlists(val items: List<YouTubePlaylist>) : YouTubeUiState
-    data class Error(val message: String) : YouTubeUiState
+
+    /**
+     * The UI maps [kind] to a localized message; [detail] is an optional raw cause
+     * (auth/network exception text) appended for diagnostics.
+     */
+    data class Error(val kind: ErrorKind, val detail: String? = null) : YouTubeUiState {
+        enum class ErrorKind { SIGN_IN_FAILED, SIGN_IN_CANCELLED, LOAD_FAILED }
+    }
 }
 
 @HiltViewModel
@@ -83,7 +90,10 @@ class YouTubeViewModel @Inject constructor(
             when (val outcome = auth.authorize()) {
                 is AuthOutcome.Token -> onToken(outcome.accessToken)
                 is AuthOutcome.NeedsConsent -> _consentRequests.send(outcome.intentSender)
-                is AuthOutcome.Failure -> _state.value = YouTubeUiState.Error(outcome.message)
+                is AuthOutcome.Failure -> _state.value = YouTubeUiState.Error(
+                    YouTubeUiState.Error.ErrorKind.SIGN_IN_FAILED,
+                    outcome.message,
+                )
             }
         }
     }
@@ -92,8 +102,12 @@ class YouTubeViewModel @Inject constructor(
         viewModelScope.launch {
             when (val outcome = auth.tokenFromConsentResult(data)) {
                 is AuthOutcome.Token -> onToken(outcome.accessToken)
+                is AuthOutcome.Failure -> _state.value = YouTubeUiState.Error(
+                    YouTubeUiState.Error.ErrorKind.SIGN_IN_FAILED,
+                    outcome.message,
+                )
                 else -> _state.value = YouTubeUiState.Error(
-                    (outcome as? AuthOutcome.Failure)?.message ?: "Sign-in was cancelled",
+                    YouTubeUiState.Error.ErrorKind.SIGN_IN_CANCELLED,
                 )
             }
         }
@@ -125,6 +139,11 @@ class YouTubeViewModel @Inject constructor(
         _state.value = YouTubeUiState.Loading
         runCatching { repository.fetchMyPlaylists(token) }
             .onSuccess { _state.value = YouTubeUiState.Playlists(it) }
-            .onFailure { _state.value = YouTubeUiState.Error(it.message ?: "Failed to load playlists") }
+            .onFailure {
+                _state.value = YouTubeUiState.Error(
+                    YouTubeUiState.Error.ErrorKind.LOAD_FAILED,
+                    it.message,
+                )
+            }
     }
 }

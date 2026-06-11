@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -42,6 +43,7 @@ import coil.compose.AsyncImage
 import com.dx.ambient.domain.model.ImportedFolder
 import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.MediaKind
+import com.dx.ambient.rendering.R
 import com.dx.ambient.rendering.components.EmptyState
 import com.dx.ambient.rendering.components.IconTextButton
 import com.dx.ambient.rendering.components.SectionHeader
@@ -79,12 +81,12 @@ fun LibraryScreen(
             .padding(rememberScreenPadding()),
     ) {
         SectionHeader(
-            title = "Media Library",
-            subtitle = "Import folders from local storage or USB, then browse your media.",
+            title = stringResource(R.string.library_title),
+            subtitle = stringResource(R.string.library_subtitle),
         )
 
         // Import/remove/refresh failures were previously silent; surface them here.
-        state.errorMessage?.let { message ->
+        state.error?.let { error ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -93,13 +95,17 @@ fun LibraryScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = message,
+                    text = when (error) {
+                        LibraryError.IMPORT_FAILED -> stringResource(R.string.library_error_import)
+                        LibraryError.REMOVE_FAILED -> stringResource(R.string.library_error_remove)
+                        LibraryError.REFRESH_FAILED -> stringResource(R.string.library_error_refresh)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.weight(1f),
                 )
                 IconTextButton(
-                    text = "Dismiss",
+                    text = stringResource(R.string.common_dismiss),
                     icon = Icons.Default.Close,
                     onClick = viewModel::dismissError,
                 )
@@ -113,12 +119,16 @@ fun LibraryScreen(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             IconTextButton(
-                text = if (state.isImporting) "Importing…" else "Import folder",
+                text = if (state.isImporting) {
+                    stringResource(R.string.library_importing)
+                } else {
+                    stringResource(R.string.library_import_folder)
+                },
                 icon = Icons.Filled.Add,
                 onClick = { folderPicker.launch(null) },
             )
             IconTextButton(
-                text = "Refresh",
+                text = stringResource(R.string.library_refresh),
                 icon = Icons.Filled.Refresh,
                 onClick = viewModel::refresh,
             )
@@ -126,11 +136,11 @@ fun LibraryScreen(
 
         if (state.folders.isEmpty()) {
             EmptyState(
-                title = "No folders yet",
-                message = "Import a folder from local storage or a USB drive to start your library.",
+                title = stringResource(R.string.library_empty_title),
+                message = stringResource(R.string.library_empty_message),
                 action = {
                     IconTextButton(
-                        text = "Import folder",
+                        text = stringResource(R.string.library_import_folder),
                         icon = Icons.Filled.Add,
                         onClick = { folderPicker.launch(null) },
                     )
@@ -160,7 +170,7 @@ private fun LibraryContent(
     ) {
         item {
             Text(
-                text = "Imported folders",
+                text = stringResource(R.string.library_imported_folders),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
@@ -213,7 +223,7 @@ private fun ImportedFolderRow(
         },
         trailingContent = {
             IconTextButton(
-                text = "Remove",
+                text = stringResource(R.string.common_remove),
                 icon = Icons.Filled.Delete,
                 onClick = onRemove,
             )
@@ -302,8 +312,9 @@ private fun MediaCard(
     }
 }
 
+@Composable
 private fun sectionLabel(kind: MediaKind): String = when (kind) {
-    MediaKind.VIDEO -> "Videos"
-    MediaKind.AUDIO -> "Audio"
-    MediaKind.IMAGE -> "Images"
+    MediaKind.VIDEO -> stringResource(R.string.library_section_videos)
+    MediaKind.AUDIO -> stringResource(R.string.library_section_audio)
+    MediaKind.IMAGE -> stringResource(R.string.library_section_images)
 }

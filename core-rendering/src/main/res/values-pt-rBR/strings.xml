@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_on">LIGADO</string>
+    <string name="common_off">DESLIGADO</string>
+    <string name="common_back">Voltar</string>
+    <string name="common_retry">Tentar novamente</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_save">Salvar</string>
+    <string name="common_edit">Editar</string>
+    <string name="common_delete">Excluir</string>
+    <string name="common_duplicate">Duplicar</string>
+    <string name="common_dismiss">Dispensar</string>
+    <string name="common_remove">Remover</string>
+    <string name="common_loading">Carregando…</string>
+    <string name="value_off">Desativado</string>
+    <string name="minutes_format">%1$d min</string>
+
+    <string name="home_action_new_scene">Nova cena</string>
+    <string name="home_action_library">Biblioteca</string>
+    <string name="home_action_settings">Configurações</string>
+    <string name="home_action_editing">✎ Editando…</string>
+    <string name="home_edit_mode_hint">Modo de edição: selecione um cartão para editá-lo • pressione Editar de novo para concluir</string>
+    <string name="home_empty_title">Ainda não há cenas</string>
+    <string name="home_empty_message">Crie sua primeira cena ambiente para começar.</string>
+    <string name="home_new_scene">Nova cena</string>
+    <string name="scene_thumbnail_video_fallback">Vídeo</string>
+
+    <string name="onboarding_title">Bem-vindo ao DX Ambient</string>
+    <string name="onboarding_line_play">Selecione um cartão de cena com OK para reproduzi-la — sua sala vira a cena.</string>
+    <string name="onboarding_line_edit">Pressione Editar na barra superior e depois selecione um cartão para editá-lo (em telas sensíveis ao toque também é possível manter pressionado).</string>
+    <string name="onboarding_line_controls">Durante a reprodução: esquerda/direita troca de cena, OK pausa, BACK ou deslizar para baixo retorna aqui.</string>
+    <string name="onboarding_line_featured">As playlists em destaque são transmitidas pelo YouTube — exigem internet e login no YouTube.</string>
+    <string name="onboarding_line_masks">Máscaras emolduram seu vídeo: escolha uma no editor de cenas e visualize ao vivo.</string>
+    <string name="onboarding_got_it">Entendi</string>
+
+    <string name="loop_mode_loop_one">Repetir uma</string>
+    <string name="loop_mode_play_once">Reproduzir uma vez</string>
+    <string name="loop_mode_loop_playlist">Repetir playlist</string>
+    <string name="loop_mode_shuffle_playlist">Playlist aleatória</string>
+
+    <string name="player_scene_unavailable">Cena indisponível</string>
+
+    <string name="editor_title_new">Nova cena</string>
+    <string name="editor_title_edit">Editar cena</string>
+    <string name="editor_name">Nome</string>
+    <string name="editor_video_source">Fonte de vídeo</string>
+    <string name="editor_video_empty_hint">Importe vídeos na Biblioteca para escolher uma fonte de imagem.</string>
+    <string name="editor_audio_source">Fonte de áudio</string>
+    <string name="editor_use_video_audio">Usar o áudio do vídeo</string>
+    <string name="editor_mask">Máscara</string>
+    <string name="editor_preview_on_video">Visualizar no vídeo</string>
+    <string name="editor_preview_needs_video">Escolha um vídeo primeiro para visualizar as máscaras ao vivo</string>
+    <string name="editor_preview_hint">◀ ▶ ou deslize para trocar a máscara  •  BACK para concluir</string>
+    <string name="editor_brightness">Brilho</string>
+    <string name="editor_loop_mode">Modo de repetição</string>
+    <string name="editor_muted">Sem som</string>
+    <string name="editor_default_scene_name">Nova cena</string>
+    <string name="editor_error_blank_name">O nome da cena não pode ficar em branco</string>
+    <string name="editor_error_save_failed">Não foi possível salvar a cena</string>
+    <string name="mask_none">Sem máscara</string>
+    <string name="mask_fallback_name">Máscara</string>
+
+    <string name="library_title">Biblioteca de mídia</string>
+    <string name="library_subtitle">Importe pastas do armazenamento local ou USB e navegue pelas suas mídias.</string>
+    <string name="library_importing">Importando…</string>
+    <string name="library_import_folder">Importar pasta</string>
+    <string name="library_refresh">Atualizar</string>
+    <string name="library_empty_title">Ainda não há pastas</string>
+    <string name="library_empty_message">Importe uma pasta do armazenamento local ou de um pen drive para começar sua biblioteca.</string>
+    <string name="library_imported_folders">Pastas importadas</string>
+    <string name="library_section_videos">Vídeos</string>
+    <string name="library_section_audio">Áudio</string>
+    <string name="library_section_images">Imagens</string>
+    <string name="library_error_import">Não foi possível importar a pasta — sem acesso de leitura ou ela não está mais acessível.</string>
+    <string name="library_error_remove">Não foi possível remover a pasta — talvez ela não esteja mais acessível.</string>
+    <string name="library_error_refresh">Não foi possível atualizar a biblioteca — talvez alguma pasta não esteja mais acessível.</string>
+
+    <string name="settings_title">Configurações</string>
+    <string name="settings_subtitle">Comportamento do projetor, escurecimento e suspensão</string>
+    <string name="settings_masks_overlays">Máscaras e sobreposições</string>
+    <string name="settings_performance_safe">Modo de desempenho seguro (desativa as máscaras)</string>
+    <string name="settings_burn_in">Proteção contra burn-in</string>
+    <string name="settings_resume_last">Retomar a última cena ao iniciar</string>
+    <string name="settings_auto_dim_after">Escurecer automaticamente após</string>
+    <string name="settings_dim_level">Nível de escurecimento</string>
+    <string name="settings_sleep_timer">Timer de suspensão</string>
+    <string name="settings_device_info">Informações e capacidades do dispositivo</string>
+    <string name="settings_device_info_sub">Veja o que este dispositivo pode fazer</string>
+
+    <string name="device_probing_title">Analisando o dispositivo…</string>
+    <string name="device_probing_message">Lendo as capacidades</string>
+    <string name="device_info_subtitle">O que este dispositivo pode fazer de forma realista</string>
+    <string name="device_label_manufacturer">Fabricante</string>
+    <string name="device_label_model">Modelo</string>
+    <string name="device_label_android_release">Versão do Android</string>
+    <string name="device_label_total_ram">RAM total</string>
+    <string name="device_label_display_size">Tamanho da tela</string>
+    <string name="device_label_refresh_rates">Taxas de atualização</string>
+    <string name="device_label_avc">Decodificação AVC por hardware</string>
+    <string name="device_label_hevc">Decodificação HEVC por hardware</string>
+    <string name="device_label_max_1080p">Máx. de decodificações 1080p simultâneas</string>
+    <string name="device_label_4k">Suporta decodificação 4K</string>
+    <string name="device_label_is_tv">É uma televisão</string>
+    <string name="device_label_tier">Nível</string>
+    <string name="device_label_recommend_masks">Máscaras recomendadas</string>
+    <string name="device_value_yes">Sim</string>
+    <string name="device_value_no">Não</string>
+
+    <string name="yt_subtitle">Reproduza suas playlists do YouTube</string>
+    <string name="yt_unsupported">O YouTube precisa do Google Play Services, que não está disponível neste dispositivo.</string>
+    <string name="yt_not_configured">O login do YouTube ainda não foi configurado. Adicione seu OAuth Web client ID em youtube_config.xml para ativá-lo.</string>
+    <string name="yt_sign_in_prompt">Faça login com sua conta do YouTube para usar os recursos do YouTube</string>
+    <string name="yt_sign_in_button">Entrar com o YouTube</string>
+    <string name="yt_no_playlists">Nenhuma playlist encontrada na sua conta.</string>
+    <string name="yt_error_sign_in_failed">Falha no login</string>
+    <string name="yt_error_sign_in_cancelled">Login cancelado</string>
+    <string name="yt_error_load_failed">Falha ao carregar as playlists</string>
+    <string name="yt_featured">Destaque</string>
+    <string name="yt_featured_hint">mantenha um cartão pressionado para escolher sua máscara</string>
+    <string name="yt_featured_builtin">Destaque • integrada</string>
+    <string name="yt_featured_video_format">★ Destaque • %1$s</string>
+    <plurals name="yt_video_count">
+        <item quantity="one">%1$d vídeo</item>
+        <item quantity="other">%1$d vídeos</item>
+    </plurals>
+    <string name="yt_status_unavailable">O YouTube não está disponível neste dispositivo</string>
+    <string name="yt_status_offline">Sem conexão com a internet</string>
+    <string name="yt_status_sign_in_required">É necessário fazer login no YouTube</string>
+    <string name="yt_no_source">Nenhuma fonte do YouTube selecionada.</string>
+    <string name="yt_loading_playlist">Carregando playlist…</string>
+    <string name="yt_blocked_title">Esta playlist não pode ser reproduzida aqui no player incorporado.</string>
+    <string name="yt_blocked_body">O YouTube bloqueia a reprodução incorporada em emuladores e dispositivos não certificados, e em vídeos cujos donos desativaram a incorporação. Tente um dispositivo certificado pelo Play ou uma playlist de vídeos incorporáveis.</string>
+    <string name="yt_mask_for">Máscara para %1$s</string>
+</resources>

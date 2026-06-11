@@ -42,6 +42,7 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,6 +56,7 @@ import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
 import com.dx.ambient.rendering.AmbientStage
+import com.dx.ambient.rendering.R
 import com.dx.ambient.rendering.components.PrimaryButton
 import com.dx.ambient.rendering.components.SectionHeader
 import com.dx.ambient.rendering.components.isTvDevice
@@ -124,29 +126,33 @@ fun SceneEditorScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             SectionHeader(
-                title = if (sceneId.isNullOrBlank()) "New Scene" else "Edit Scene",
+                title = if (sceneId.isNullOrBlank()) {
+                    stringResource(R.string.editor_title_new)
+                } else {
+                    stringResource(R.string.editor_title_edit)
+                },
             )
 
             NameField(name = draft.name, onNameChange = viewModel::setName)
 
             MediaPickerRow(
-                label = "Video source",
+                label = stringResource(R.string.editor_video_source),
                 media = videos,
                 selectedUri = draft.videoSource.uri.takeIf {
                     draft.videoSource.type == MediaSourceType.LOCAL_VIDEO
                 },
                 onPick = viewModel::pickVideo,
-                emptyHint = "Import videos in Library to pick a picture source.",
+                emptyHint = stringResource(R.string.editor_video_empty_hint),
             )
 
             MediaPickerRow(
-                label = "Audio source",
+                label = stringResource(R.string.editor_audio_source),
                 media = audios,
                 selectedUri = draft.audioSource.uri.takeIf {
                     draft.audioSource.type == MediaSourceType.LOCAL_AUDIO
                 },
                 onPick = viewModel::pickAudio,
-                clearLabel = "Use video's audio",
+                clearLabel = stringResource(R.string.editor_use_video_audio),
                 onClear = viewModel::clearAudio,
             )
 
@@ -167,20 +173,29 @@ fun SceneEditorScreen(
                 onIncrease = { viewModel.setBrightness(draft.brightness + 0.05f) },
             )
 
-            ToggleRow(label = "Loop mode") {
+            ToggleRow(label = stringResource(R.string.editor_loop_mode)) {
                 PrimaryButton(text = loopModeLabel(draft), onClick = viewModel::cycleLoopMode)
             }
 
-            ToggleRow(label = "Muted") {
+            ToggleRow(label = stringResource(R.string.editor_muted)) {
                 PrimaryButton(
-                    text = if (draft.muted) "ON" else "OFF",
+                    text = if (draft.muted) {
+                        stringResource(R.string.common_on)
+                    } else {
+                        stringResource(R.string.common_off)
+                    },
                     onClick = viewModel::toggleMute,
                 )
             }
 
-            error?.let { message ->
+            error?.let { saveError ->
                 Text(
-                    text = message,
+                    text = when (saveError) {
+                        SceneEditorViewModel.SaveError.BLANK_NAME ->
+                            stringResource(R.string.editor_error_blank_name)
+                        SceneEditorViewModel.SaveError.SAVE_FAILED ->
+                            stringResource(R.string.editor_error_save_failed)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -195,11 +210,11 @@ fun SceneEditorScreen(
                 .padding(top = 16.dp),
         ) {
             PrimaryButton(
-                text = "Save",
+                text = stringResource(R.string.common_save),
                 onClick = { viewModel.save { onDone() } },
                 modifier = Modifier.focusRequester(saveFocus),
             )
-            PrimaryButton(text = "Cancel", onClick = onDone)
+            PrimaryButton(text = stringResource(R.string.common_cancel), onClick = onDone)
         }
     }
 
@@ -295,11 +310,16 @@ private fun MaskPreviewOverlay(
                 .padding(32.dp),
         ) {
             Text(
-                text = draft.mask.displayName ?: if (draft.mask.enabled) "Mask" else "No mask",
+                text = draft.mask.displayName
+                    ?: if (draft.mask.enabled) {
+                        stringResource(R.string.mask_fallback_name)
+                    } else {
+                        stringResource(R.string.mask_none)
+                    },
                 style = MaterialTheme.typography.headlineSmall,
             )
             Text(
-                text = "◀ ▶ or swipe to change mask  •  BACK to finish",
+                text = stringResource(R.string.editor_preview_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
             )
@@ -310,7 +330,7 @@ private fun MaskPreviewOverlay(
 @Composable
 private fun NameField(name: String, onNameChange: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = "Name", style = MaterialTheme.typography.titleMedium)
+        Text(text = stringResource(R.string.editor_name), style = MaterialTheme.typography.titleMedium)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -395,12 +415,12 @@ private fun MaskGalleryRow(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
-            Text(text = "Mask", style = MaterialTheme.typography.titleMedium)
+            Text(text = stringResource(R.string.editor_mask), style = MaterialTheme.typography.titleMedium)
             if (onPreview != null) {
-                PrimaryButton(text = "Preview on video", onClick = onPreview)
+                PrimaryButton(text = stringResource(R.string.editor_preview_on_video), onClick = onPreview)
             } else {
                 Text(
-                    text = "Pick a video first to preview masks live",
+                    text = stringResource(R.string.editor_preview_needs_video),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
@@ -409,7 +429,7 @@ private fun MaskGalleryRow(
         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
                 MaskTile(
-                    label = "No mask",
+                    label = stringResource(R.string.mask_none),
                     maskUri = null,
                     selected = selectedUri == null,
                     onClick = onClear,
@@ -515,7 +535,7 @@ private fun BrightnessStepper(
     onDecrease: () -> Unit,
     onIncrease: () -> Unit,
 ) {
-    ToggleRow(label = "Brightness") {
+    ToggleRow(label = stringResource(R.string.editor_brightness)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PrimaryButton(text = "-", onClick = onDecrease, enabled = brightness > 0f)
             Text(
@@ -543,10 +563,11 @@ private fun ToggleRow(label: String, content: @Composable () -> Unit) {
     }
 }
 
+@Composable
 private fun loopModeLabel(scene: Scene): String = when (scene.loopMode.name) {
-    "LOOP_ONE" -> "Loop one"
-    "PLAY_ONCE" -> "Play once"
-    "LOOP_PLAYLIST" -> "Loop playlist"
-    "SHUFFLE_PLAYLIST" -> "Shuffle playlist"
+    "LOOP_ONE" -> stringResource(R.string.loop_mode_loop_one)
+    "PLAY_ONCE" -> stringResource(R.string.loop_mode_play_once)
+    "LOOP_PLAYLIST" -> stringResource(R.string.loop_mode_loop_playlist)
+    "SHUFFLE_PLAYLIST" -> stringResource(R.string.loop_mode_shuffle_playlist)
     else -> scene.loopMode.name
 }

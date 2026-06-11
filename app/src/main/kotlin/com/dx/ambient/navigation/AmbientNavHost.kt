@@ -29,6 +29,7 @@ import com.dx.ambient.youtube.YouTubeIFrameScreen
 import com.dx.ambient.youtube.ui.MaskPickerDialog
 import com.dx.ambient.youtube.ui.YouTubeFeaturedViewModel
 import com.dx.ambient.youtube.ui.YouTubeTabScreen
+import com.dx.ambient.youtube.ui.featuredStatusText
 
 /**
  * App navigation graph. Single-activity, Compose Navigation. The optional YouTube destinations
@@ -73,12 +74,15 @@ fun AmbientNavHost() {
                 val featuredViewModel: YouTubeFeaturedViewModel = hiltViewModel()
                 val featured by featuredViewModel.state.collectAsStateWithLifecycle()
                 LaunchedEffect(Unit) { featuredViewModel.refresh() }
+                // Resolve the status enum to a localized hint here (composable context)
+                // so the pure-UI FeaturedTile model keeps carrying plain text.
+                val statusHint = featured.status?.let { featuredStatusText(it) }
                 featuredTiles = featured.items.map { item ->
                     FeaturedTile(
                         id = item.playlistId,
                         title = item.title,
                         enabled = featured.available,
-                        statusHint = featured.statusHint,
+                        statusHint = statusHint,
                         thumbnailUrl = item.thumbnailUrl,
                     )
                 }

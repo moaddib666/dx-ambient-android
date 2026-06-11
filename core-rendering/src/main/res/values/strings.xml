@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shared user-facing strings for ALL UI modules (app, feature-*, optional-youtube).
+  Every module already depends on core-rendering, so this is the single home for
+  translatable text. When adding a string here, add it to every values-<locale>/
+  strings.xml sibling as well (see CLAUDE.md "Localization").
+-->
+<resources>
+    <!-- Common actions / values -->
+    <string name="common_on">ON</string>
+    <string name="common_off">OFF</string>
+    <string name="common_back">Back</string>
+    <string name="common_retry">Retry</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_save">Save</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_duplicate">Duplicate</string>
+    <string name="common_dismiss">Dismiss</string>
+    <string name="common_remove">Remove</string>
+    <string name="common_loading">Loading…</string>
+    <string name="common_percent" translatable="false">%1$d%%</string>
+    <string name="value_off">Off</string>
+    <string name="minutes_format">%1$d min</string>
+
+    <!-- Home screen -->
+    <string name="home_action_new_scene">New scene</string>
+    <string name="home_action_library">Library</string>
+    <string name="home_action_settings">Settings</string>
+    <string name="home_action_editing">✎ Editing…</string>
+    <string name="home_edit_mode_hint">Edit mode: select a card to edit it • press Edit again to finish</string>
+    <string name="home_empty_title">No scenes yet</string>
+    <string name="home_empty_message">Create your first ambient scene to get started.</string>
+    <string name="home_new_scene">New Scene</string>
+    <string name="scene_thumbnail_video_fallback">Video</string>
+    <string name="youtube_label" translatable="false">YouTube</string>
+
+    <!-- First-launch guide -->
+    <string name="onboarding_title">Welcome to DX Ambient</string>
+    <string name="onboarding_line_play">Select a scene card with OK to play it — your room becomes the scene.</string>
+    <string name="onboarding_line_edit">Press Edit in the top bar, then select a card to edit it (on touch screens you can also long-press).</string>
+    <string name="onboarding_line_controls">While playing: left/right switches scenes, OK pauses, BACK or swipe down returns here.</string>
+    <string name="onboarding_line_featured">Featured playlists stream via YouTube — they need internet and a YouTube sign-in.</string>
+    <string name="onboarding_line_masks">Masks frame your video: pick one in the scene editor and preview it live.</string>
+    <string name="onboarding_got_it">Got it</string>
+
+    <!-- Loop modes -->
+    <string name="loop_mode_loop_one">Loop one</string>
+    <string name="loop_mode_play_once">Play once</string>
+    <string name="loop_mode_loop_playlist">Loop playlist</string>
+    <string name="loop_mode_shuffle_playlist">Shuffle playlist</string>
+
+    <!-- Player -->
+    <string name="player_scene_unavailable">Scene unavailable</string>
+
+    <!-- Scene editor -->
+    <string name="editor_title_new">New Scene</string>
+    <string name="editor_title_edit">Edit Scene</string>
+    <string name="editor_name">Name</string>
+    <string name="editor_video_source">Video source</string>
+    <string name="editor_video_empty_hint">Import videos in Library to pick a picture source.</string>
+    <string name="editor_audio_source">Audio source</string>
+    <string name="editor_use_video_audio">Use video\'s audio</string>
+    <string name="editor_mask">Mask</string>
+    <string name="editor_preview_on_video">Preview on video</string>
+    <string name="editor_preview_needs_video">Pick a video first to preview masks live</string>
+    <string name="editor_preview_hint">◀ ▶ or swipe to change mask  •  BACK to finish</string>
+    <string name="editor_brightness">Brightness</string>
+    <string name="editor_loop_mode">Loop mode</string>
+    <string name="editor_muted">Muted</string>
+    <string name="editor_default_scene_name">New scene</string>
+    <string name="editor_error_blank_name">Scene name must not be blank</string>
+    <string name="editor_error_save_failed">Could not save scene</string>
+    <string name="mask_none">No mask</string>
+    <string name="mask_fallback_name">Mask</string>
+
+    <!-- Media library -->
+    <string name="library_title">Media Library</string>
+    <string name="library_subtitle">Import folders from local storage or USB, then browse your media.</string>
+    <string name="library_importing">Importing…</string>
+    <string name="library_import_folder">Import folder</string>
+    <string name="library_refresh">Refresh</string>
+    <string name="library_empty_title">No folders yet</string>
+    <string name="library_empty_message">Import a folder from local storage or a USB drive to start your library.</string>
+    <string name="library_imported_folders">Imported folders</string>
+    <string name="library_section_videos">Videos</string>
+    <string name="library_section_audio">Audio</string>
+    <string name="library_section_images">Images</string>
+    <string name="library_error_import">Couldn\'t import the folder — read access wasn\'t granted or it\'s no longer accessible.</string>
+    <string name="library_error_remove">Couldn\'t remove the folder — it may no longer be accessible.</string>
+    <string name="library_error_refresh">Couldn\'t refresh the library — a folder may no longer be accessible.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Projector behaviour, dimming and sleep</string>
+    <string name="settings_masks_overlays">Masks &amp; overlays</string>
+    <string name="settings_performance_safe">Performance-safe mode (forces masks off)</string>
+    <string name="settings_burn_in">Burn-in protection</string>
+    <string name="settings_resume_last">Resume last scene on launch</string>
+    <string name="settings_auto_dim_after">Auto-dim after</string>
+    <string name="settings_dim_level">Dim level</string>
+    <string name="settings_sleep_timer">Sleep timer</string>
+    <string name="settings_device_info">Device info &amp; capabilities</string>
+    <string name="settings_device_info_sub">View what this device can do</string>
+
+    <!-- Device info -->
+    <string name="device_probing_title">Probing device…</string>
+    <string name="device_probing_message">Reading capabilities</string>
+    <string name="device_info_subtitle">What this device can realistically do</string>
+    <string name="device_label_manufacturer">Manufacturer</string>
+    <string name="device_label_model">Model</string>
+    <string name="device_label_android_sdk" translatable="false">Android SDK</string>
+    <string name="device_label_android_release">Android release</string>
+    <string name="device_label_total_ram">Total RAM</string>
+    <string name="device_label_abis" translatable="false">ABIs</string>
+    <string name="device_label_display_size">Display size</string>
+    <string name="device_label_refresh_rates">Refresh rates</string>
+    <string name="device_label_avc">Hardware AVC decode</string>
+    <string name="device_label_hevc">Hardware HEVC decode</string>
+    <string name="device_label_max_1080p">Max 1080p decode instances</string>
+    <string name="device_label_4k">Supports 4K decode</string>
+    <string name="device_label_play_services" translatable="false">Google Play Services</string>
+    <string name="device_label_is_tv">Is television</string>
+    <string name="device_label_tier">Tier</string>
+    <string name="device_label_recommend_masks">Recommend masks</string>
+    <string name="device_value_yes">Yes</string>
+    <string name="device_value_no">No</string>
+    <string name="device_value_mb" translatable="false">%1$d MB</string>
+    <string name="device_value_display" translatable="false">%1$d × %2$d px</string>
+    <string name="device_value_hz" translatable="false">%1$s Hz</string>
+
+    <!-- YouTube -->
+    <string name="yt_subtitle">Play your YouTube playlists</string>
+    <string name="yt_unsupported">YouTube needs Google Play Services, which isn\'t available on this device.</string>
+    <string name="yt_not_configured">YouTube sign-in isn\'t configured yet. Add your OAuth Web client ID in youtube_config.xml to enable it.</string>
+    <string name="yt_sign_in_prompt">Sign in with your YouTube account to use YouTube features</string>
+    <string name="yt_sign_in_button">Sign in with YouTube</string>
+    <string name="yt_no_playlists">No playlists found on your account.</string>
+    <string name="yt_error_sign_in_failed">Sign-in failed</string>
+    <string name="yt_error_sign_in_cancelled">Sign-in was cancelled</string>
+    <string name="yt_error_load_failed">Failed to load playlists</string>
+    <string name="yt_featured">Featured</string>
+    <string name="yt_featured_hint">long-press a card to choose its mask</string>
+    <string name="yt_featured_builtin">Featured • built-in</string>
+    <string name="yt_featured_video_format">★ Featured • %1$s</string>
+    <plurals name="yt_video_count">
+        <item quantity="one">%1$d video</item>
+        <item quantity="other">%1$d videos</item>
+    </plurals>
+    <string name="yt_status_unavailable">YouTube isn\'t available on this device</string>
+    <string name="yt_status_offline">No internet connection</string>
+    <string name="yt_status_sign_in_required">YouTube sign-in required</string>
+    <string name="yt_no_source">No YouTube source selected.</string>
+    <string name="yt_loading_playlist">Loading playlist…</string>
+    <string name="yt_blocked_title">This playlist can\'t play in the embedded player here.</string>
+    <string name="yt_blocked_body">YouTube blocks embedded playback on emulators and uncertified devices, and on videos whose owners disabled embedding. Try a Play-certified device, or a playlist of embeddable videos.</string>
+    <string name="yt_mask_for">Mask for %1$s</string>
+</resources>

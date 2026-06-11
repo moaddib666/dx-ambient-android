@@ -30,6 +30,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -40,6 +42,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import androidx.compose.runtime.remember
+import com.dx.ambient.rendering.R
 import com.dx.ambient.rendering.components.AmbientScreen
 import com.dx.ambient.rendering.components.PrimaryButton
 import com.dx.ambient.rendering.components.SectionHeader
@@ -87,7 +90,10 @@ fun YouTubeTabScreen(
 
     AmbientScreen(modifier = modifier) {
         Column(modifier = Modifier.fillMaxSize().padding(rememberScreenPadding())) {
-            SectionHeader(title = "YouTube", subtitle = "Play your YouTube playlists")
+            SectionHeader(
+                title = stringResource(R.string.youtube_label),
+                subtitle = stringResource(R.string.yt_subtitle),
+            )
 
             // Long-press a featured card to choose its mask.
             var maskPickerFor by remember {
@@ -115,17 +121,16 @@ fun YouTubeTabScreen(
 
             when (val s = state) {
                 YouTubeUiState.Unsupported -> CenteredMessage(
-                    "YouTube needs Google Play Services, which isn't available on this device.",
+                    stringResource(R.string.yt_unsupported),
                 )
                 YouTubeUiState.NotConfigured -> CenteredMessage(
-                    "YouTube sign-in isn't configured yet. Add your OAuth Web client ID in " +
-                        "youtube_config.xml to enable it.",
+                    stringResource(R.string.yt_not_configured),
                 )
                 YouTubeUiState.SignedOut -> SignInPrompt(onSignIn = viewModel::signIn)
-                YouTubeUiState.Loading -> CenteredMessage("Loading…")
+                YouTubeUiState.Loading -> CenteredMessage(stringResource(R.string.common_loading))
                 is YouTubeUiState.Playlists -> {
                     if (s.items.isEmpty()) {
-                        CenteredMessage("No playlists found on your account.")
+                        CenteredMessage(stringResource(R.string.yt_no_playlists))
                     } else {
                         PlaylistGrid(
                             playlists = s.items,
@@ -135,7 +140,7 @@ fun YouTubeTabScreen(
                         )
                     }
                 }
-                is YouTubeUiState.Error -> ErrorView(message = s.message, onRetry = viewModel::retry)
+                is YouTubeUiState.Error -> ErrorView(error = s, onRetry = viewModel::retry)
             }
         }
     }
@@ -156,16 +161,24 @@ private fun SignInPrompt(onSignIn: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             Text(
-                text = "Sign in with your YouTube account to use YouTube features",
+                text = stringResource(R.string.yt_sign_in_prompt),
                 style = MaterialTheme.typography.titleMedium,
             )
             PrimaryButton(
-                text = "Sign in with YouTube",
+                text = stringResource(R.string.yt_sign_in_button),
                 onClick = onSignIn,
                 modifier = Modifier.focusRequester(signInFocus),
             )
         }
     }
+}
+
+/** Localized hint for why featured playlists are unplayable right now. */
+@Composable
+fun featuredStatusText(status: FeaturedStatus): String = when (status) {
+    FeaturedStatus.UNAVAILABLE -> stringResource(R.string.yt_status_unavailable)
+    FeaturedStatus.OFFLINE -> stringResource(R.string.yt_status_offline)
+    FeaturedStatus.SIGN_IN_REQUIRED -> stringResource(R.string.yt_status_sign_in_required)
 }
 
 @Composable
@@ -176,18 +189,26 @@ private fun CenteredMessage(message: String) {
 }
 
 @Composable
-private fun ErrorView(message: String, onRetry: () -> Unit) {
+private fun ErrorView(error: YouTubeUiState.Error, onRetry: () -> Unit) {
+    val kindText = when (error.kind) {
+        YouTubeUiState.Error.ErrorKind.SIGN_IN_FAILED ->
+            stringResource(R.string.yt_error_sign_in_failed)
+        YouTubeUiState.Error.ErrorKind.SIGN_IN_CANCELLED ->
+            stringResource(R.string.yt_error_sign_in_cancelled)
+        YouTubeUiState.Error.ErrorKind.LOAD_FAILED ->
+            stringResource(R.string.yt_error_load_failed)
+    }
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = message,
+                text = error.detail?.let { "$kindText: $it" } ?: kindText,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.error,
             )
-            PrimaryButton(text = "Retry", onClick = onRetry)
+            PrimaryButton(text = stringResource(R.string.common_retry), onClick = onRetry)
         }
     }
 }
@@ -206,16 +227,17 @@ private fun FeaturedRail(
     if (state.items.isEmpty()) return
     Column(modifier = modifier.fillMaxWidth().padding(top = 12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "Featured", style = MaterialTheme.typography.titleMedium)
-            if (!state.available && state.statusHint != null) {
+            Text(text = stringResource(R.string.yt_featured), style = MaterialTheme.typography.titleMedium)
+            val status = state.status
+            if (!state.available && status != null) {
                 Text(
-                    text = "  ⚠ ${state.statusHint}",
+                    text = "  ⚠ ${featuredStatusText(status)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
             } else {
                 Text(
-                    text = "  long-press a card to choose its mask",
+                    text = "  " + stringResource(R.string.yt_featured_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
@@ -296,7 +318,11 @@ private fun FeaturedCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = if (item.isDefault) "Featured • built-in" else "Featured",
+                    text = if (item.isDefault) {
+                        stringResource(R.string.yt_featured_builtin)
+                    } else {
+                        stringResource(R.string.yt_featured)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
@@ -370,8 +396,17 @@ private fun PlaylistCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                val videosText = pluralStringResource(
+                    R.plurals.yt_video_count,
+                    playlist.itemCount,
+                    playlist.itemCount,
+                )
                 Text(
-                    text = if (featured) "★ Featured • ${playlist.itemCount} videos" else "${playlist.itemCount} videos",
+                    text = if (featured) {
+                        stringResource(R.string.yt_featured_video_format, videosText)
+                    } else {
+                        videosText
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )

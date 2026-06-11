@@ -32,6 +32,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -46,6 +47,7 @@ import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
+import com.dx.ambient.rendering.R
 import com.dx.ambient.rendering.components.AmbientScreen
 import com.dx.ambient.rendering.components.CircleIconButton
 import com.dx.ambient.rendering.components.EmptyState
@@ -124,16 +126,20 @@ fun HomeScreen(
             // New scene: a native circular "+" button.
             CircleIconButton(
                 onClick = onCreateScene,
-                contentDescription = "New scene",
+                contentDescription = stringResource(R.string.home_action_new_scene),
                 modifier = Modifier.focusRequester(firstActionFocus),
             )
-            PrimaryButton(text = "Library", onClick = onOpenLibrary)
-            PrimaryButton(text = "Settings", onClick = onOpenSettings)
+            PrimaryButton(text = stringResource(R.string.home_action_library), onClick = onOpenLibrary)
+            PrimaryButton(text = stringResource(R.string.home_action_settings), onClick = onOpenSettings)
             if (onOpenYouTube != null) {
-                PrimaryButton(text = "YouTube", onClick = onOpenYouTube)
+                PrimaryButton(text = stringResource(R.string.youtube_label), onClick = onOpenYouTube)
             }
             PrimaryButton(
-                text = if (editMode) "✎ Editing…" else "Edit",
+                text = if (editMode) {
+                    stringResource(R.string.home_action_editing)
+                } else {
+                    stringResource(R.string.common_edit)
+                },
                 onClick = { editMode = !editMode },
             )
         }
@@ -145,7 +151,7 @@ fun HomeScreen(
 
         Text(
             text = when {
-                editMode -> "Edit mode: select a card to edit it • press Edit again to finish"
+                editMode -> stringResource(R.string.home_edit_mode_hint)
                 disabledHint != null -> "⚠ $disabledHint"
                 else -> " "
             },
@@ -156,10 +162,15 @@ fun HomeScreen(
 
         if (scenes.isEmpty() && sortedFeatured.isEmpty()) {
             EmptyState(
-                title = "No scenes yet",
-                message = "Create your first ambient scene to get started.",
+                title = stringResource(R.string.home_empty_title),
+                message = stringResource(R.string.home_empty_message),
                 modifier = Modifier.fillMaxSize(),
-                action = { PrimaryButton(text = "New Scene", onClick = onCreateScene) },
+                action = {
+                    PrimaryButton(
+                        text = stringResource(R.string.home_new_scene),
+                        onClick = onCreateScene,
+                    )
+                },
             )
         } else {
             LazyRow(
@@ -225,14 +236,17 @@ private fun OnboardingOverlay(onDismiss: () -> Unit) {
                 .padding(32.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(text = "Welcome to DX Ambient", style = MaterialTheme.typography.headlineSmall)
-            GuideLine("▶", "Select a scene card with OK to play it — your room becomes the scene.")
-            GuideLine("✎", "Press Edit in the top bar, then select a card to edit it (on touch screens you can also long-press).")
-            GuideLine("◀ ▶", "While playing: left/right switches scenes, OK pauses, BACK or swipe down returns here.")
-            GuideLine("★", "Featured playlists stream via YouTube — they need internet and a YouTube sign-in.")
-            GuideLine("◐", "Masks frame your video: pick one in the scene editor and preview it live.")
+            Text(
+                text = stringResource(R.string.onboarding_title),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            GuideLine("▶", stringResource(R.string.onboarding_line_play))
+            GuideLine("✎", stringResource(R.string.onboarding_line_edit))
+            GuideLine("◀ ▶", stringResource(R.string.onboarding_line_controls))
+            GuideLine("★", stringResource(R.string.onboarding_line_featured))
+            GuideLine("◐", stringResource(R.string.onboarding_line_masks))
             PrimaryButton(
-                text = "Got it",
+                text = stringResource(R.string.onboarding_got_it),
                 onClick = onDismiss,
                 modifier = Modifier.focusRequester(okFocus).padding(top = 8.dp),
             )
@@ -464,9 +478,21 @@ private fun SceneActionsDialog(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(text = sceneName, style = MaterialTheme.typography.titleMedium)
-            PrimaryButton(text = "Edit", onClick = onEdit, modifier = Modifier.fillMaxWidth())
-            PrimaryButton(text = "Duplicate", onClick = onDuplicate, modifier = Modifier.fillMaxWidth())
-            PrimaryButton(text = "Delete", onClick = onDelete, modifier = Modifier.fillMaxWidth())
+            PrimaryButton(
+                text = stringResource(R.string.common_edit),
+                onClick = onEdit,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            PrimaryButton(
+                text = stringResource(R.string.common_duplicate),
+                onClick = onDuplicate,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            PrimaryButton(
+                text = stringResource(R.string.common_delete),
+                onClick = onDelete,
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
     }
 }
@@ -503,7 +529,8 @@ private fun SceneThumbnail(scene: Scene, modifier: Modifier = Modifier) {
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = source.displayName ?: "Video",
+                    text = source.displayName
+                        ?: stringResource(R.string.scene_thumbnail_video_fallback),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 )
@@ -515,10 +542,11 @@ private fun SceneThumbnail(scene: Scene, modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
 private fun loopModeLabel(scene: Scene): String = when (scene.loopMode.name) {
-    "LOOP_ONE" -> "Loop one"
-    "PLAY_ONCE" -> "Play once"
-    "LOOP_PLAYLIST" -> "Loop playlist"
-    "SHUFFLE_PLAYLIST" -> "Shuffle playlist"
+    "LOOP_ONE" -> stringResource(R.string.loop_mode_loop_one)
+    "PLAY_ONCE" -> stringResource(R.string.loop_mode_play_once)
+    "LOOP_PLAYLIST" -> stringResource(R.string.loop_mode_loop_playlist)
+    "SHUFFLE_PLAYLIST" -> stringResource(R.string.loop_mode_shuffle_playlist)
     else -> scene.loopMode.name
 }

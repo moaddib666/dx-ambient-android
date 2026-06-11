@@ -27,9 +27,11 @@ class SceneEditorViewModelTest {
     private val sceneRepo = FakeSceneRepository()
     private val mediaRepo = FakeMediaLibraryRepository()
 
-    // Context is only used to list bundled mask assets; a relaxed mock yields no default masks.
+    // Context lists bundled mask assets (relaxed mock yields none) and resolves the
+    // localized default scene name (stubbed to the English resource value).
     private val context = mockk<Context>(relaxed = true).also {
         every { it.assets } returns mockk(relaxed = true)
+        every { it.getString(any()) } returns "New scene"
     }
 
     private val player = mockk<AmbientPlayer>(relaxed = true)

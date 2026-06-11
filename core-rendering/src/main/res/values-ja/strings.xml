@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_on">オン</string>
+    <string name="common_off">オフ</string>
+    <string name="common_back">戻る</string>
+    <string name="common_retry">再試行</string>
+    <string name="common_cancel">キャンセル</string>
+    <string name="common_save">保存</string>
+    <string name="common_edit">編集</string>
+    <string name="common_delete">削除</string>
+    <string name="common_duplicate">複製</string>
+    <string name="common_dismiss">閉じる</string>
+    <string name="common_remove">削除</string>
+    <string name="common_loading">読み込み中…</string>
+    <string name="value_off">オフ</string>
+    <string name="minutes_format">%1$d分</string>
+
+    <string name="home_action_new_scene">新しいシーン</string>
+    <string name="home_action_library">ライブラリ</string>
+    <string name="home_action_settings">設定</string>
+    <string name="home_action_editing">✎ 編集中…</string>
+    <string name="home_edit_mode_hint">編集モード: カードを選択して編集 • もう一度「編集」を押すと終了</string>
+    <string name="home_empty_title">シーンがまだありません</string>
+    <string name="home_empty_message">最初のアンビエントシーンを作成して始めましょう。</string>
+    <string name="home_new_scene">新しいシーン</string>
+    <string name="scene_thumbnail_video_fallback">動画</string>
+
+    <string name="onboarding_title">DX Ambient へようこそ</string>
+    <string name="onboarding_line_play">OK ボタンでシーンカードを選ぶと再生されます — 部屋がそのままシーンになります。</string>
+    <string name="onboarding_line_edit">上部バーの「編集」を押してからカードを選ぶと編集できます（タッチ画面では長押しも可能）。</string>
+    <string name="onboarding_line_controls">再生中: 左/右でシーン切り替え、OK で一時停止、BACK か下スワイプでここに戻ります。</string>
+    <string name="onboarding_line_featured">おすすめプレイリストは YouTube 経由で再生されます — インターネットと YouTube ログインが必要です。</string>
+    <string name="onboarding_line_masks">マスクは動画を縁取ります: シーンエディタで選んでライブプレビューできます。</string>
+    <string name="onboarding_got_it">OK</string>
+
+    <string name="loop_mode_loop_one">1件をループ</string>
+    <string name="loop_mode_play_once">1回再生</string>
+    <string name="loop_mode_loop_playlist">プレイリストをループ</string>
+    <string name="loop_mode_shuffle_playlist">プレイリストをシャッフル</string>
+
+    <string name="player_scene_unavailable">シーンを利用できません</string>
+
+    <string name="editor_title_new">新しいシーン</string>
+    <string name="editor_title_edit">シーンを編集</string>
+    <string name="editor_name">名前</string>
+    <string name="editor_video_source">動画ソース</string>
+    <string name="editor_video_empty_hint">ライブラリで動画をインポートすると、映像ソースを選べます。</string>
+    <string name="editor_audio_source">音声ソース</string>
+    <string name="editor_use_video_audio">動画の音声を使う</string>
+    <string name="editor_mask">マスク</string>
+    <string name="editor_preview_on_video">動画でプレビュー</string>
+    <string name="editor_preview_needs_video">マスクをライブプレビューするには、まず動画を選んでください</string>
+    <string name="editor_preview_hint">◀ ▶ またはスワイプでマスク切り替え  •  BACK で終了</string>
+    <string name="editor_brightness">明るさ</string>
+    <string name="editor_loop_mode">ループモード</string>
+    <string name="editor_muted">ミュート</string>
+    <string name="editor_default_scene_name">新しいシーン</string>
+    <string name="editor_error_blank_name">シーン名を空にすることはできません</string>
+    <string name="editor_error_save_failed">シーンを保存できませんでした</string>
+    <string name="mask_none">マスクなし</string>
+    <string name="mask_fallback_name">マスク</string>
+
+    <string name="library_title">メディアライブラリ</string>
+    <string name="library_subtitle">ローカルストレージや USB からフォルダをインポートして、メディアを閲覧できます。</string>
+    <string name="library_importing">インポート中…</string>
+    <string name="library_import_folder">フォルダをインポート</string>
+    <string name="library_refresh">更新</string>
+    <string name="library_empty_title">フォルダがまだありません</string>
+    <string name="library_empty_message">ローカルストレージまたは USB ドライブからフォルダをインポートして、ライブラリを始めましょう。</string>
+    <string name="library_imported_folders">インポートしたフォルダ</string>
+    <string name="library_section_videos">動画</string>
+    <string name="library_section_audio">音声</string>
+    <string name="library_section_images">画像</string>
+    <string name="library_error_import">フォルダをインポートできませんでした — 読み取りアクセスが許可されていないか、アクセスできなくなっています。</string>
+    <string name="library_error_remove">フォルダを削除できませんでした — アクセスできなくなっている可能性があります。</string>
+    <string name="library_error_refresh">ライブラリを更新できませんでした — アクセスできないフォルダがある可能性があります。</string>
+
+    <string name="settings_title">設定</string>
+    <string name="settings_subtitle">プロジェクターの動作・減光・スリープ</string>
+    <string name="settings_masks_overlays">マスクとオーバーレイ</string>
+    <string name="settings_performance_safe">パフォーマンス優先モード（マスクを無効化）</string>
+    <string name="settings_burn_in">焼き付き防止</string>
+    <string name="settings_resume_last">起動時に前回のシーンを再開</string>
+    <string name="settings_auto_dim_after">自動減光までの時間</string>
+    <string name="settings_dim_level">減光レベル</string>
+    <string name="settings_sleep_timer">スリープタイマー</string>
+    <string name="settings_device_info">デバイス情報と性能</string>
+    <string name="settings_device_info_sub">このデバイスでできることを確認</string>
+
+    <string name="device_probing_title">デバイスを確認中…</string>
+    <string name="device_probing_message">性能を読み取っています</string>
+    <string name="device_info_subtitle">このデバイスで現実的にできること</string>
+    <string name="device_label_manufacturer">メーカー</string>
+    <string name="device_label_model">モデル</string>
+    <string name="device_label_android_release">Android バージョン</string>
+    <string name="device_label_total_ram">合計 RAM</string>
+    <string name="device_label_display_size">画面サイズ</string>
+    <string name="device_label_refresh_rates">リフレッシュレート</string>
+    <string name="device_label_avc">AVC ハードウェアデコード</string>
+    <string name="device_label_hevc">HEVC ハードウェアデコード</string>
+    <string name="device_label_max_1080p">1080p 同時デコード最大数</string>
+    <string name="device_label_4k">4K デコード対応</string>
+    <string name="device_label_is_tv">テレビかどうか</string>
+    <string name="device_label_tier">ティア</string>
+    <string name="device_label_recommend_masks">マスク推奨</string>
+    <string name="device_value_yes">はい</string>
+    <string name="device_value_no">いいえ</string>
+
+    <string name="yt_subtitle">YouTube プレイリストを再生</string>
+    <string name="yt_unsupported">YouTube には Google Play 開発者サービスが必要ですが、このデバイスでは利用できません。</string>
+    <string name="yt_not_configured">YouTube ログインはまだ設定されていません。youtube_config.xml に OAuth Web client ID を追加すると有効になります。</string>
+    <string name="yt_sign_in_prompt">YouTube の機能を使うには YouTube アカウントでログインしてください</string>
+    <string name="yt_sign_in_button">YouTube でログイン</string>
+    <string name="yt_no_playlists">アカウントにプレイリストが見つかりませんでした。</string>
+    <string name="yt_error_sign_in_failed">ログインに失敗しました</string>
+    <string name="yt_error_sign_in_cancelled">ログインがキャンセルされました</string>
+    <string name="yt_error_load_failed">プレイリストを読み込めませんでした</string>
+    <string name="yt_featured">おすすめ</string>
+    <string name="yt_featured_hint">カードを長押しするとマスクを選べます</string>
+    <string name="yt_featured_builtin">おすすめ • 内蔵</string>
+    <string name="yt_featured_video_format">★ おすすめ • %1$s</string>
+    <plurals name="yt_video_count">
+        <item quantity="other">%1$d本の動画</item>
+    </plurals>
+    <string name="yt_status_unavailable">このデバイスでは YouTube を利用できません</string>
+    <string name="yt_status_offline">インターネットに接続されていません</string>
+    <string name="yt_status_sign_in_required">YouTube へのログインが必要です</string>
+    <string name="yt_no_source">YouTube のソースが選択されていません。</string>
+    <string name="yt_loading_playlist">プレイリストを読み込み中…</string>
+    <string name="yt_blocked_title">このプレイリストは、ここの埋め込みプレーヤーでは再生できません。</string>
+    <string name="yt_blocked_body">YouTube は、エミュレーターや未認証デバイスでの埋め込み再生、および所有者が埋め込みを無効にした動画をブロックします。Play 認証済みデバイスか、埋め込み可能な動画のプレイリストをお試しください。</string>
+    <string name="yt_mask_for">%1$s のマスク</string>
+</resources>

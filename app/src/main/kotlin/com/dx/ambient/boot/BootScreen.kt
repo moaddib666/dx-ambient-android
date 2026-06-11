@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import com.dx.ambient.R
 
 /**
@@ -25,7 +26,7 @@ fun BootScreen(modifier: Modifier = Modifier) {
     ) {
         Image(
             painter = painterResource(R.drawable.splash_art),
-            contentDescription = "DX Ambient",
+            contentDescription = stringResource(R.string.app_name),
             contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize(),
         )

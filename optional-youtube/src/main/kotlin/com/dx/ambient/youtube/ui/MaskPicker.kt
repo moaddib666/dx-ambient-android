@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -23,6 +24,7 @@ import androidx.tv.material3.Card
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
+import com.dx.ambient.rendering.R
 import com.dx.ambient.rendering.components.touchClickable
 
 /**
@@ -48,12 +50,15 @@ fun MaskPickerDialog(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(text = "Mask for $title", style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(R.string.yt_mask_for, title),
+                style = MaterialTheme.typography.titleMedium,
+            )
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(count = masks.size + 1) { index ->
                     if (index == 0) {
                         MaskOptionTile(
-                            label = "No mask",
+                            label = stringResource(R.string.mask_none),
                             maskUri = null,
                             selected = selectedUri == null,
                             onClick = { onSelect(null) },

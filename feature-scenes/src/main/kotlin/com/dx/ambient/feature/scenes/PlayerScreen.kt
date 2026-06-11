@@ -28,6 +28,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -38,6 +39,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.dx.ambient.rendering.AmbientStage
+import com.dx.ambient.rendering.R
 import kotlinx.coroutines.delay
 
 /**
@@ -181,7 +183,7 @@ fun PlayerScreen(
         } else if (!uiState.loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "Scene unavailable",
+                    text = stringResource(R.string.player_scene_unavailable),
                     style = MaterialTheme.typography.headlineSmall,
                     color = Color.White,
                 )

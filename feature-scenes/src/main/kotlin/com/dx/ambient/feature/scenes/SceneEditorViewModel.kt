@@ -13,6 +13,7 @@ import com.dx.ambient.domain.repository.MediaLibraryRepository
 import com.dx.ambient.domain.repository.SceneRepository
 import com.dx.ambient.domain.usecase.SaveSceneUseCase
 import com.dx.ambient.playback.AmbientPlayer
+import com.dx.ambient.rendering.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
@@ -41,6 +42,9 @@ class SceneEditorViewModel @Inject constructor(
     val player: AmbientPlayer,
 ) : ViewModel() {
 
+    /** Why the last save attempt failed; the UI maps each case to a localized string. */
+    enum class SaveError { BLANK_NAME, SAVE_FAILED }
+
     /** Pickable local videos for the picture source. */
     val videos: StateFlow<List<LibraryMedia>> =
         mediaLibraryRepository.observeMedia(MediaKind.VIDEO).asState()
@@ -68,27 +72,29 @@ class SceneEditorViewModel @Inject constructor(
                 initialValue = defaultMasks,
             )
 
-    private val _draft = MutableStateFlow(Scene(id = "", name = "New scene"))
+    private val _draft = MutableStateFlow(Scene(id = "", name = defaultSceneName()))
 
     /** The scene currently being authored. */
     val draft: StateFlow<Scene> = _draft.asStateFlow()
 
-    private val _error = MutableStateFlow<String?>(null)
+    private val _error = MutableStateFlow<SaveError?>(null)
 
     /** Non-null when the last save attempt failed validation; shown to the user. */
-    val error: StateFlow<String?> = _error.asStateFlow()
+    val error: StateFlow<SaveError?> = _error.asStateFlow()
 
     /** Load an existing scene by id, or start a fresh draft for null/blank. */
     fun bind(sceneId: String?) {
         if (sceneId.isNullOrBlank()) {
-            _draft.value = Scene(id = "", name = "New scene")
+            _draft.value = Scene(id = "", name = defaultSceneName())
             return
         }
         viewModelScope.launch {
             _draft.value = sceneRepository.getScene(sceneId)
-                ?: Scene(id = "", name = "New scene")
+                ?: Scene(id = "", name = defaultSceneName())
         }
     }
+
+    private fun defaultSceneName(): String = context.getString(R.string.editor_default_scene_name)
 
     fun setName(name: String) {
         _draft.value = _draft.value.copy(name = name)
@@ -171,7 +177,13 @@ class SceneEditorViewModel @Inject constructor(
                     _error.value = null
                     onSaved()
                 }
-                .onFailure { _error.value = it.message ?: "Could not save scene" }
+                .onFailure {
+                    _error.value = if (it is IllegalArgumentException) {
+                        SaveError.BLANK_NAME
+                    } else {
+                        SaveError.SAVE_FAILED
+                    }
+                }
         }
     }
 

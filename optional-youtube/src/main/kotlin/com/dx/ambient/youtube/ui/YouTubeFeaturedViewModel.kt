@@ -22,17 +22,23 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
+ * Why featured playlists are currently unplayable. The UI maps each case to a
+ * localized hint — ViewModels never emit display text (see CLAUDE.md "Localization").
+ */
+enum class FeaturedStatus { UNAVAILABLE, OFFLINE, SIGN_IN_REQUIRED }
+
+/**
  * State for the featured-playlists rail (Home screen + YouTube tab).
  *
  * Featured entries are always listed; they are [available] (playable) only when
  * the device is online AND a silent YouTube authorization succeeds. Otherwise
- * the UI greys them out with [statusHint] explaining what's missing.
+ * the UI greys them out with [status] explaining what's missing.
  */
 data class FeaturedUiState(
     val items: List<FeaturedPlaylist> = emptyList(),
     val featuredIds: Set<String> = emptySet(),
     val available: Boolean = false,
-    val statusHint: String? = null,
+    val status: FeaturedStatus? = null,
 )
 
 @HiltViewModel
@@ -43,9 +49,9 @@ class YouTubeFeaturedViewModel @Inject constructor(
     private val repository: FeaturedPlaylistsRepository,
 ) : ViewModel() {
 
-    private data class Availability(val available: Boolean, val hint: String?)
+    private data class Availability(val available: Boolean, val status: FeaturedStatus?)
 
-    private val availability = MutableStateFlow(Availability(available = false, hint = null))
+    private val availability = MutableStateFlow(Availability(available = false, status = null))
 
     val state: StateFlow<FeaturedUiState> =
         combine(repository.featured, availability) { items, avail ->
@@ -53,7 +59,7 @@ class YouTubeFeaturedViewModel @Inject constructor(
                 items = items,
                 featuredIds = items.map { it.playlistId }.toSet(),
                 available = avail.available,
-                statusHint = avail.hint,
+                status = avail.status,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -70,11 +76,11 @@ class YouTubeFeaturedViewModel @Inject constructor(
         viewModelScope.launch {
             availability.value = when {
                 !config.hasGooglePlayServices || !config.isConfigured ->
-                    Availability(false, "YouTube isn't available on this device")
+                    Availability(false, FeaturedStatus.UNAVAILABLE)
                 !isOnline() ->
-                    Availability(false, "No internet connection")
+                    Availability(false, FeaturedStatus.OFFLINE)
                 !silentlySignedIn() ->
-                    Availability(false, "YouTube sign-in required")
+                    Availability(false, FeaturedStatus.SIGN_IN_REQUIRED)
                 else -> Availability(true, null)
             }
         }

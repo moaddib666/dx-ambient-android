@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="common_on">УВІМК</string>
+    <string name="common_off">ВИМК</string>
+    <string name="common_back">Назад</string>
+    <string name="common_retry">Повторити</string>
+    <string name="common_cancel">Скасувати</string>
+    <string name="common_save">Зберегти</string>
+    <string name="common_edit">Редагувати</string>
+    <string name="common_delete">Видалити</string>
+    <string name="common_duplicate">Дублювати</string>
+    <string name="common_dismiss">Закрити</string>
+    <string name="common_remove">Прибрати</string>
+    <string name="common_loading">Завантаження…</string>
+    <string name="value_off">Вимк.</string>
+    <string name="minutes_format">%1$d хв</string>
+
+    <string name="home_action_new_scene">Нова сцена</string>
+    <string name="home_action_library">Бібліотека</string>
+    <string name="home_action_settings">Налаштування</string>
+    <string name="home_action_editing">✎ Редагування…</string>
+    <string name="home_edit_mode_hint">Режим редагування: виберіть картку, щоб змінити її • натисніть «Редагувати» ще раз, щоб завершити</string>
+    <string name="home_empty_title">Сцен поки немає</string>
+    <string name="home_empty_message">Створіть свою першу ambient-сцену, щоб почати.</string>
+    <string name="home_new_scene">Нова сцена</string>
+    <string name="scene_thumbnail_video_fallback">Відео</string>
+
+    <string name="onboarding_title">Вітаємо в DX Ambient</string>
+    <string name="onboarding_line_play">Виберіть картку сцени кнопкою OK, щоб відтворити її — ваша кімната стане сценою.</string>
+    <string name="onboarding_line_edit">Натисніть «Редагувати» на верхній панелі, потім виберіть картку, щоб змінити її (на сенсорних екранах можна також утримувати).</string>
+    <string name="onboarding_line_controls">Під час відтворення: вліво/вправо — перемикання сцен, OK — пауза, BACK або свайп вниз — повернення сюди.</string>
+    <string name="onboarding_line_featured">Рекомендовані плейлисти відтворюються через YouTube — потрібні інтернет і вхід у YouTube.</string>
+    <string name="onboarding_line_masks">Маски обрамляють відео: виберіть одну в редакторі сцен і переглядайте наживо.</string>
+    <string name="onboarding_got_it">Зрозуміло</string>
+
+    <string name="loop_mode_loop_one">Повтор одного</string>
+    <string name="loop_mode_play_once">Один раз</string>
+    <string name="loop_mode_loop_playlist">Повтор плейлиста</string>
+    <string name="loop_mode_shuffle_playlist">Плейлист упереміш</string>
+
+    <string name="player_scene_unavailable">Сцена недоступна</string>
+
+    <string name="editor_title_new">Нова сцена</string>
+    <string name="editor_title_edit">Редагування сцени</string>
+    <string name="editor_name">Назва</string>
+    <string name="editor_video_source">Джерело відео</string>
+    <string name="editor_video_empty_hint">Імпортуйте відео в Бібліотеці, щоб вибрати джерело зображення.</string>
+    <string name="editor_audio_source">Джерело звуку</string>
+    <string name="editor_use_video_audio">Звук із відео</string>
+    <string name="editor_mask">Маска</string>
+    <string name="editor_preview_on_video">Перегляд на відео</string>
+    <string name="editor_preview_needs_video">Спершу виберіть відео, щоб переглядати маски наживо</string>
+    <string name="editor_preview_hint">◀ ▶ або свайп — зміна маски  •  BACK — завершити</string>
+    <string name="editor_brightness">Яскравість</string>
+    <string name="editor_loop_mode">Режим повтору</string>
+    <string name="editor_muted">Без звуку</string>
+    <string name="editor_default_scene_name">Нова сцена</string>
+    <string name="editor_error_blank_name">Назва сцени не може бути порожньою</string>
+    <string name="editor_error_save_failed">Не вдалося зберегти сцену</string>
+    <string name="mask_none">Без маски</string>
+    <string name="mask_fallback_name">Маска</string>
+
+    <string name="library_title">Медіатека</string>
+    <string name="library_subtitle">Імпортуйте папки з локального сховища або USB і переглядайте свої медіа.</string>
+    <string name="library_importing">Імпорт…</string>
+    <string name="library_import_folder">Імпортувати папку</string>
+    <string name="library_refresh">Оновити</string>
+    <string name="library_empty_title">Папок поки немає</string>
+    <string name="library_empty_message">Імпортуйте папку з локального сховища або USB-носія, щоб почати бібліотеку.</string>
+    <string name="library_imported_folders">Імпортовані папки</string>
+    <string name="library_section_videos">Відео</string>
+    <string name="library_section_audio">Аудіо</string>
+    <string name="library_section_images">Зображення</string>
+    <string name="library_error_import">Не вдалося імпортувати папку — немає доступу на читання або вона більше недоступна.</string>
+    <string name="library_error_remove">Не вдалося прибрати папку — можливо, вона більше недоступна.</string>
+    <string name="library_error_refresh">Не вдалося оновити бібліотеку — можливо, якась папка більше недоступна.</string>
+
+    <string name="settings_title">Налаштування</string>
+    <string name="settings_subtitle">Поведінка проєктора, затемнення і сон</string>
+    <string name="settings_masks_overlays">Маски й накладки</string>
+    <string name="settings_performance_safe">Безпечний режим продуктивності (вимикає маски)</string>
+    <string name="settings_burn_in">Захист від вигоряння</string>
+    <string name="settings_resume_last">Відновлювати останню сцену під час запуску</string>
+    <string name="settings_auto_dim_after">Автозатемнення через</string>
+    <string name="settings_dim_level">Рівень затемнення</string>
+    <string name="settings_sleep_timer">Таймер сну</string>
+    <string name="settings_device_info">Інформація про пристрій і можливості</string>
+    <string name="settings_device_info_sub">Перегляньте, на що здатен цей пристрій</string>
+
+    <string name="device_probing_title">Перевірка пристрою…</string>
+    <string name="device_probing_message">Зчитування можливостей</string>
+    <string name="device_info_subtitle">Що цей пристрій реально може</string>
+    <string name="device_label_manufacturer">Виробник</string>
+    <string name="device_label_model">Модель</string>
+    <string name="device_label_android_release">Версія Android</string>
+    <string name="device_label_total_ram">Обсяг RAM</string>
+    <string name="device_label_display_size">Розмір екрана</string>
+    <string name="device_label_refresh_rates">Частоти оновлення</string>
+    <string name="device_label_avc">Апаратне декодування AVC</string>
+    <string name="device_label_hevc">Апаратне декодування HEVC</string>
+    <string name="device_label_max_1080p">Макс. одночасних декодувань 1080p</string>
+    <string name="device_label_4k">Підтримка декодування 4K</string>
+    <string name="device_label_is_tv">Це телевізор</string>
+    <string name="device_label_tier">Рівень</string>
+    <string name="device_label_recommend_masks">Маски рекомендовано</string>
+    <string name="device_value_yes">Так</string>
+    <string name="device_value_no">Ні</string>
+
+    <string name="yt_subtitle">Відтворюйте свої плейлисти YouTube</string>
+    <string name="yt_unsupported">Для YouTube потрібні сервіси Google Play, яких немає на цьому пристрої.</string>
+    <string name="yt_not_configured">Вхід у YouTube ще не налаштовано. Додайте свій OAuth Web client ID у youtube_config.xml, щоб увімкнути його.</string>
+    <string name="yt_sign_in_prompt">Увійдіть зі своїм акаунтом YouTube, щоб користуватися функціями YouTube</string>
+    <string name="yt_sign_in_button">Увійти через YouTube</string>
+    <string name="yt_no_playlists">В акаунті не знайдено плейлистів.</string>
+    <string name="yt_error_sign_in_failed">Не вдалося ввійти</string>
+    <string name="yt_error_sign_in_cancelled">Вхід скасовано</string>
+    <string name="yt_error_load_failed">Не вдалося завантажити плейлисти</string>
+    <string name="yt_featured">Рекомендоване</string>
+    <string name="yt_featured_hint">утримуйте картку, щоб вибрати її маску</string>
+    <string name="yt_featured_builtin">Рекомендоване • вбудоване</string>
+    <string name="yt_featured_video_format">★ Рекомендоване • %1$s</string>
+    <plurals name="yt_video_count">
+        <item quantity="one">%1$d відео</item>
+        <item quantity="few">%1$d відео</item>
+        <item quantity="many">%1$d відео</item>
+        <item quantity="other">%1$d відео</item>
+    </plurals>
+    <string name="yt_status_unavailable">YouTube недоступний на цьому пристрої</string>
+    <string name="yt_status_offline">Немає з\'єднання з інтернетом</string>
+    <string name="yt_status_sign_in_required">Потрібен вхід у YouTube</string>
+    <string name="yt_no_source">Джерело YouTube не вибрано.</string>
+    <string name="yt_loading_playlist">Завантаження плейлиста…</string>
+    <string name="yt_blocked_title">Цей плейлист не відтворюється у вбудованому плеєрі тут.</string>
+    <string name="yt_blocked_body">YouTube блокує вбудоване відтворення на емуляторах і несертифікованих пристроях, а також для відео, власники яких заборонили вбудовування. Спробуйте Play-сертифікований пристрій або плейлист із відео, доступними для вбудовування.</string>
+    <string name="yt_mask_for">Маска для %1$s</string>
+</resources>
