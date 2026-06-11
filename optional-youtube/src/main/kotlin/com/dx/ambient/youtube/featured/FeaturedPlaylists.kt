@@ -99,14 +99,16 @@ class FeaturedPlaylistsRepository @Inject constructor(
         /** The bundled shared mask (core-rendering assets/masks). */
         const val GENERIC_MASK_URI = "file:///android_asset/masks/generic.png"
 
+        /** Bundled cover art for the shipped playlist (optional-youtube assets/covers). */
+        const val DX_AMBIENT_COVER_URI = "file:///android_asset/covers/dx_ambient_featured.webp"
+
         /** Shipped featured playlists — permanent, not user-removable. */
         val DEFAULTS: List<FeaturedPlaylist> = listOf(
             FeaturedPlaylist(
                 playlistId = "PLazDOSmamQaHwJRkOrRBrfB8zT4JBHpgZ",
                 title = "DX Ambient — Featured",
                 isDefault = true,
-                // Artwork to be bundled later; gradient placeholder until then.
-                thumbnailUrl = null,
+                thumbnailUrl = DX_AMBIENT_COVER_URI,
                 maskUri = GENERIC_MASK_URI,
             ),
         )
