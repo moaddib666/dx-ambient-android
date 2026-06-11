@@ -54,15 +54,7 @@ Dependency direction is strictly inward: `feature-*` → `core-rendering` → `c
 
 Requirements: **JDK 17**, **Android SDK** (API 35), Android Studio Ladybug+ recommended.
 
-This repo ships the Gradle wrapper *scripts* and config but **not** the binary
-`gradle/wrapper/gradle-wrapper.jar` (binary blobs aren't committed here). Generate it once:
-
-- **Easiest:** open the project in Android Studio — it detects the wrapper config and downloads
-  the matching Gradle (8.11.1) automatically, then Build ▸ Make Project.
-- **CLI:** with a system Gradle available, run `gradle wrapper --gradle-version 8.11.1` once,
-  then use `./gradlew` normally.
-
-Then:
+The Gradle wrapper is committed — clone and build:
 
 ```bash
 ./gradlew :app:assembleDebug      # build the APK
@@ -71,6 +63,9 @@ Then:
 ```
 
 `local.properties` already points at the local Android SDK.
+
+Releases are published entirely from Gradle (no Play Console UI) — see
+[docs/PUBLISHING.md](docs/PUBLISHING.md).
 
 > **Status (verified):** the project builds and ships a debug APK. `./gradlew :app:assembleDebug`
 > succeeds (Hilt aggregation, KSP, manifest merge, dexing) and the full unit-test suite —
