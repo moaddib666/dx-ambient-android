@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -136,6 +137,21 @@ fun PlayerScreen(
                         when {
                             dragTotal <= -threshold -> viewModel.next()
                             dragTotal >= threshold -> viewModel.previous()
+                        }
+                    },
+                ) { _, dragAmount -> dragTotal += dragAmount }
+            }
+            // Swipe up or down collapses the player: stop playback and return to Home,
+            // mirroring the system "dismiss" gesture instead of leaving the video stuck.
+            .pointerInput(Unit) {
+                var dragTotal = 0f
+                detectVerticalDragGestures(
+                    onDragStart = { dragTotal = 0f },
+                    onDragEnd = {
+                        val threshold = 120.dp.toPx()
+                        if (dragTotal <= -threshold || dragTotal >= threshold) {
+                            viewModel.onStop()
+                            onExit()
                         }
                     },
                 ) { _, dragAmount -> dragTotal += dragAmount }

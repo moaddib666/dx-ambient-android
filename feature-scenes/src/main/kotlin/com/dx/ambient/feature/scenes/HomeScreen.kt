@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -23,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -54,6 +58,20 @@ import com.dx.ambient.rendering.components.touchClickable
 private val NeonCyan = Color(0xFF00E5FF)
 
 /**
+ * A curated (YouTube) playlist tile pinned on the home screen. Pure UI model so
+ * this module stays decoupled from the optional YouTube module — the app layer
+ * maps and injects these.
+ */
+data class FeaturedTile(
+    val id: String,
+    val title: String,
+    val enabled: Boolean,
+    /** Why the tile is disabled (offline / sign-in required); shown when [enabled] is false. */
+    val statusHint: String? = null,
+    val thumbnailUrl: String? = null,
+)
+
+/**
  * TV remote-first home screen (MVP feature 1).
  *
  * Shows the saved scenes in a focusable grid with top-level actions (New Scene,
@@ -70,6 +88,9 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     /** Optional entry to the isolated YouTube mode. Null hides it (e.g. devices without Play). */
     onOpenYouTube: (() -> Unit)? = null,
+    /** Curated playlists pinned above the scene grid; empty hides the rail. */
+    featuredTiles: List<FeaturedTile> = emptyList(),
+    onPlayFeatured: ((String) -> Unit)? = null,
 ) {
     val viewModel: HomeViewModel = hiltViewModel()
     val scenes by viewModel.state.collectAsStateWithLifecycle()
@@ -105,6 +126,10 @@ fun HomeScreen(
             }
         }
 
+        if (featuredTiles.isNotEmpty() && onPlayFeatured != null) {
+            FeaturedRail(tiles = featuredTiles, onPlay = onPlayFeatured)
+        }
+
         if (scenes.isEmpty()) {
             EmptyState(
                 title = "No scenes yet",
@@ -136,6 +161,108 @@ fun HomeScreen(
             }
         }
       }
+    }
+}
+
+/**
+ * Horizontal rail of curated playlist tiles. Disabled tiles render greyed out
+ * with a warning marker and the reason (no internet / sign-in required); the
+ * rail itself never disappears, so the curated content is always discoverable.
+ */
+@Composable
+private fun FeaturedRail(
+    tiles: List<FeaturedTile>,
+    onPlay: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val disabledHint = tiles.firstOrNull { !it.enabled }?.statusHint
+    Column(modifier = modifier.fillMaxWidth().padding(top = 20.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "Featured", style = MaterialTheme.typography.titleMedium)
+            if (disabledHint != null) {
+                Text(
+                    text = "  ⚠ $disabledHint",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFFFFB74D),
+                )
+            }
+        }
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(vertical = 12.dp, horizontal = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            items(items = tiles, key = { it.id }) { tile ->
+                FeaturedTileCard(tile = tile, onPlay = onPlay)
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeaturedTileCard(tile: FeaturedTile, onPlay: (String) -> Unit) {
+    val shape = RoundedCornerShape(14.dp)
+    val play = { if (tile.enabled) onPlay(tile.id) }
+    Card(
+        onClick = play,
+        modifier = Modifier
+            .width(220.dp)
+            .touchClickable(onClick = play)
+            .alpha(if (tile.enabled) 1f else 0.45f),
+        shape = CardDefaults.shape(shape),
+        colors = CardDefaults.colors(
+            containerColor = Color.White.copy(alpha = 0.05f),
+            focusedContainerColor = Color.White.copy(alpha = 0.12f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        border = CardDefaults.border(
+            border = Border(BorderStroke(1.dp, Color.White.copy(alpha = 0.10f)), shape = shape),
+            focusedBorder = Border(BorderStroke(1.dp, NeonCyan), shape = shape),
+        ),
+        scale = CardDefaults.scale(focusedScale = 1.03f),
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+            if (tile.thumbnailUrl != null) {
+                AsyncImage(
+                    model = tile.thumbnailUrl,
+                    contentDescription = tile.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(listOf(Color(0xFF0E2A3C), Color(0xFF123B33))),
+                        ),
+                )
+            }
+            if (!tile.enabled) {
+                Text(
+                    text = "⚠",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0.45f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.85f),
+                        ),
+                    ),
+            )
+            Text(
+                text = tile.title,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),
+            )
+        }
     }
 }
 

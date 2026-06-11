@@ -58,6 +58,9 @@ dependencies {
     // YouTube Data API JSON parsing (calls go over HttpURLConnection).
     implementation(libs.kotlinx.serialization.json)
 
+    // Featured playlists persistence (curated entries survive restarts).
+    implementation(libs.androidx.datastore.preferences)
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }

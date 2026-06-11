@@ -303,11 +303,14 @@ private fun buildPlayerHtml(
         ?.joinToString(",") { "'$it'" }
 
     // Playlist takes precedence when present; resolved ids beat the bare embed.
+    // Ambient use: playlists restart from the top when they finish ('loop': 1 /
+    // setLoop below), so a playlist can serve as an endless video loop.
     val playerVarsBody =
         if (idsJsArray == null && !playlistId.isNullOrEmpty()) {
             """
             'listType': 'playlist',
             'list': '$safePlaylistId',
+            'loop': 1,
             'controls': 1,
             'rel': 0,
             'modestbranding': 1,
@@ -333,7 +336,7 @@ private fun buildPlayerHtml(
     // Array playlists start via loadPlaylist; everything else autoplay-starts directly.
     val onReadyBody =
         if (idsJsArray != null) {
-            "e.target.loadPlaylist([$idsJsArray]);"
+            "e.target.loadPlaylist([$idsJsArray]); e.target.setLoop(true);"
         } else {
             "e.target.playVideo();"
         }

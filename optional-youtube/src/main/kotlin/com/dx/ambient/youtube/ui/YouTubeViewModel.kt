@@ -48,6 +48,22 @@ class YouTubeViewModel @Inject constructor(
 
     private var accessToken: String? = null
 
+    init {
+        // The Authorization API keeps the grant across app restarts: try a *silent*
+        // sign-in up-front so returning users land straight on their playlists
+        // instead of a redundant sign-in wall. Consent UI is never launched from
+        // here — only an explicit signIn() tap may surface it.
+        if (config.hasGooglePlayServices && config.isConfigured) {
+            _state.value = YouTubeUiState.Loading
+            viewModelScope.launch {
+                when (val outcome = auth.authorize()) {
+                    is AuthOutcome.Token -> onToken(outcome.accessToken)
+                    else -> _state.value = YouTubeUiState.SignedOut
+                }
+            }
+        }
+    }
+
     private fun initialState(): YouTubeUiState = when {
         // Gate the whole feature on Play Services; otherwise always start at the login wall so
         // the tab "begins with sign in", even before an OAuth client ID has been configured.

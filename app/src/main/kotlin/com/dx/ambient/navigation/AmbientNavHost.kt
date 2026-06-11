@@ -15,6 +15,7 @@ import com.dx.ambient.boot.BootDecision
 import com.dx.ambient.boot.BootScreen
 import com.dx.ambient.boot.BootViewModel
 import com.dx.ambient.feature.library.LibraryScreen
+import com.dx.ambient.feature.scenes.FeaturedTile
 import com.dx.ambient.feature.scenes.HomeScreen
 import com.dx.ambient.feature.scenes.PlayerScreen
 import com.dx.ambient.feature.scenes.SceneEditorScreen
@@ -22,6 +23,7 @@ import com.dx.ambient.feature.settings.DeviceInfoScreen
 import com.dx.ambient.feature.settings.SettingsScreen
 import com.dx.ambient.rendering.components.AmbientScreen
 import com.dx.ambient.youtube.YouTubeIFrameScreen
+import com.dx.ambient.youtube.ui.YouTubeFeaturedViewModel
 import com.dx.ambient.youtube.ui.YouTubeTabScreen
 
 /**
@@ -58,6 +60,24 @@ fun AmbientNavHost() {
         }
 
         composable(Routes.HOME) {
+            // Featured YouTube playlists pinned on Home: always listed, playable only
+            // when online + silently signed in; otherwise greyed out with the reason.
+            var featuredTiles: List<FeaturedTile> = emptyList()
+            if (BuildConfig.YOUTUBE_MODE_ENABLED) {
+                val featuredViewModel: YouTubeFeaturedViewModel = hiltViewModel()
+                val featured by featuredViewModel.state.collectAsStateWithLifecycle()
+                LaunchedEffect(Unit) { featuredViewModel.refresh() }
+                featuredTiles = featured.items.map { item ->
+                    FeaturedTile(
+                        id = item.playlistId,
+                        title = item.title,
+                        enabled = featured.available,
+                        statusHint = featured.statusHint,
+                        thumbnailUrl = item.thumbnailUrl,
+                    )
+                }
+            }
+
             HomeScreen(
                 onPlayScene = { sceneId -> navController.navigate(Routes.player(sceneId)) },
                 onEditScene = { sceneId -> navController.navigate(Routes.editor(sceneId)) },
@@ -68,6 +88,10 @@ fun AmbientNavHost() {
                     { navController.navigate(Routes.YOUTUBE) }
                 } else {
                     null
+                },
+                featuredTiles = featuredTiles,
+                onPlayFeatured = { playlistId ->
+                    navController.navigate(Routes.youtubePlayer(playlistId))
                 },
             )
         }

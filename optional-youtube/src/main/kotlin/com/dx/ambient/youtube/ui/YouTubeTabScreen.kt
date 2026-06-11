@@ -5,13 +5,16 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -20,8 +23,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,6 +46,7 @@ import com.dx.ambient.rendering.components.isTvDevice
 import com.dx.ambient.rendering.components.rememberScreenPadding
 import com.dx.ambient.rendering.components.touchClickable
 import com.dx.ambient.youtube.data.YouTubePlaylist
+import com.dx.ambient.youtube.featured.FeaturedPlaylist
 
 /**
  * The YouTube hub. Starts at a login wall ("sign in with your YouTube account") and, once
@@ -55,6 +61,9 @@ fun YouTubeTabScreen(
 ) {
     val viewModel: YouTubeViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val featuredViewModel: YouTubeFeaturedViewModel = hiltViewModel()
+    val featuredState by featuredViewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state) { featuredViewModel.refresh() }
 
     // Launches the one-time OAuth consent screen when the Authorization API asks for it.
     val consentLauncher = rememberLauncherForActivityResult(
@@ -78,6 +87,11 @@ fun YouTubeTabScreen(
         Column(modifier = Modifier.fillMaxSize().padding(rememberScreenPadding())) {
             SectionHeader(title = "YouTube", subtitle = "Play your YouTube playlists")
 
+            FeaturedRail(
+                state = featuredState,
+                onPlay = onPlayPlaylist,
+            )
+
             when (val s = state) {
                 YouTubeUiState.Unsupported -> CenteredMessage(
                     "YouTube needs Google Play Services, which isn't available on this device.",
@@ -92,7 +106,12 @@ fun YouTubeTabScreen(
                     if (s.items.isEmpty()) {
                         CenteredMessage("No playlists found on your account.")
                     } else {
-                        PlaylistGrid(playlists = s.items, onPlay = onPlayPlaylist)
+                        PlaylistGrid(
+                            playlists = s.items,
+                            featuredIds = featuredState.featuredIds,
+                            onPlay = onPlayPlaylist,
+                            onToggleFeatured = featuredViewModel::toggleFeatured,
+                        )
                     }
                 }
                 is YouTubeUiState.Error -> ErrorView(message = s.message, onRetry = viewModel::retry)
@@ -152,8 +171,116 @@ private fun ErrorView(message: String, onRetry: () -> Unit) {
     }
 }
 
+/**
+ * Curated playlists pinned above the account grid. Entries are greyed out with a
+ * status hint when offline or signed out; the shipped defaults are permanent.
+ */
 @Composable
-private fun PlaylistGrid(playlists: List<YouTubePlaylist>, onPlay: (String) -> Unit) {
+private fun FeaturedRail(
+    state: FeaturedUiState,
+    onPlay: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (state.items.isEmpty()) return
+    Column(modifier = modifier.fillMaxWidth().padding(top = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "Featured", style = MaterialTheme.typography.titleMedium)
+            if (!state.available && state.statusHint != null) {
+                Text(
+                    text = "  ⚠ ${state.statusHint}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
+        androidx.compose.foundation.lazy.LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        ) {
+            items(count = state.items.size, key = { state.items[it].playlistId }) { index ->
+                val item = state.items[index]
+                FeaturedCard(
+                    item = item,
+                    enabled = state.available,
+                    onClick = { if (state.available) onPlay(item.playlistId) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeaturedCard(
+    item: FeaturedPlaylist,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .width(220.dp)
+            .touchClickable(onClick = onClick)
+            .alpha(if (enabled) 1f else 0.45f),
+        colors = CardDefaults.colors(
+            containerColor = Color.White.copy(alpha = 0.06f),
+            focusedContainerColor = Color.White.copy(alpha = 0.14f),
+            contentColor = MaterialTheme.colorScheme.onSurface,
+        ),
+        scale = CardDefaults.scale(focusedScale = 1.04f),
+    ) {
+        Column {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+                if (item.thumbnailUrl != null) {
+                    AsyncImage(
+                        model = item.thumbnailUrl,
+                        contentDescription = item.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    // Placeholder until the bundled artwork lands.
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(Color(0xFF0E2A3C), Color(0xFF123B33)),
+                                ),
+                            ),
+                    )
+                }
+                if (!enabled) {
+                    Text(
+                        text = "⚠",
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
+            }
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = if (item.isDefault) "Featured • built-in" else "Featured",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaylistGrid(
+    playlists: List<YouTubePlaylist>,
+    featuredIds: Set<String>,
+    onPlay: (String) -> Unit,
+    onToggleFeatured: (YouTubePlaylist) -> Unit,
+) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 220.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -161,18 +288,30 @@ private fun PlaylistGrid(playlists: List<YouTubePlaylist>, onPlay: (String) -> U
         modifier = Modifier.fillMaxSize().padding(top = 16.dp),
     ) {
         items(items = playlists, key = { it.id }) { playlist ->
-            PlaylistCard(playlist = playlist, onClick = { onPlay(playlist.id) })
+            PlaylistCard(
+                playlist = playlist,
+                featured = playlist.id in featuredIds,
+                onClick = { onPlay(playlist.id) },
+                onLongClick = { onToggleFeatured(playlist) },
+            )
         }
     }
 }
 
 @Composable
-private fun PlaylistCard(playlist: YouTubePlaylist, onClick: () -> Unit) {
+private fun PlaylistCard(
+    playlist: YouTubePlaylist,
+    featured: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
     Card(
         onClick = onClick,
+        // Long-press (touch) or center-hold (remote) features/unfeatures the playlist.
+        onLongClick = onLongClick,
         modifier = Modifier
             .fillMaxWidth()
-            .touchClickable(onClick = onClick),
+            .touchClickable(onClick = onClick, onLongClick = onLongClick),
         colors = CardDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.06f),
             focusedContainerColor = Color.White.copy(alpha = 0.14f),
@@ -201,7 +340,7 @@ private fun PlaylistCard(playlist: YouTubePlaylist, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "${playlist.itemCount} videos",
+                    text = if (featured) "★ Featured • ${playlist.itemCount} videos" else "${playlist.itemCount} videos",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
