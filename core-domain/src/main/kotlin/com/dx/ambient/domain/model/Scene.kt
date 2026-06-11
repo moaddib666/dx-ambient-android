@@ -18,6 +18,13 @@ data class Scene(
     val id: String,
     val name: String,
 
+    /**
+     * The authored scene type, deciding which editor form and render path apply. Null for
+     * scenes saved before the field existed — use [resolvedKind], which falls back to
+     * deriving the kind from the picture source.
+     */
+    val kind: SceneKind? = null,
+
     /** Primary picture source. May be a video, a still image, or NONE for audio-only scenes. */
     val videoSource: MediaSource = MediaSource.NONE,
 
@@ -46,6 +53,9 @@ data class Scene(
 
     val loopMode: LoopMode = LoopMode.LOOP_ONE,
 
+    /** Slide timing/transition for [SceneKind.SLIDESHOW] scenes; ignored otherwise. */
+    val slideshow: SlideshowConfig = SlideshowConfig(),
+
     /** Temporarily excluded from the home row and scene switching; editable in edit mode. */
     val hidden: Boolean = false,
 
@@ -64,12 +74,27 @@ data class Scene(
     val hasVideo: Boolean get() = videoSource.type != MediaSourceType.NONE
     val hasMask: Boolean get() = mask.enabled
 
+    /**
+     * The effective scene type: the persisted [kind] when present, otherwise derived from
+     * the picture source so scenes saved before [kind] existed keep working.
+     */
+    val resolvedKind: SceneKind
+        get() = kind ?: when {
+            videoSource.isYouTube -> SceneKind.YOUTUBE
+            videoSource.type == MediaSourceType.LOCAL_IMAGE -> SceneKind.SLIDESHOW
+            else -> SceneKind.VIDEO
+        }
+
     /** All picture sources in playback order, including [videoSource] as the head. */
     val fullVideoPlaylist: List<MediaSource>
         get() = buildList {
             if (hasVideo) add(videoSource)
             addAll(videoPlaylist)
         }
+
+    /** The slideshow's images in display order (the picture playlist filtered to images). */
+    val slideshowImages: List<MediaSource>
+        get() = fullVideoPlaylist.filter { it.type == MediaSourceType.LOCAL_IMAGE }
 
     /** True when this scene needs the heavier composited render path rather than SurfaceView. */
     val requiresCompositedRendering: Boolean
@@ -78,4 +103,20 @@ data class Scene(
     companion object {
         const val DEFAULT_BRIGHTNESS = 0.85f
     }
+}
+
+/**
+ * The authored type of a [Scene]. Each kind has its own editor form; they share the
+ * common parts (name, audio, mask, brightness/opacity/scale, mute).
+ */
+@Serializable
+enum class SceneKind {
+    /** Picture from a local video file or a direct http(s) stream. */
+    VIDEO,
+
+    /** Picture from a YouTube video/playlist, played via the IFrame-only module. */
+    YOUTUBE,
+
+    /** Picture from a list of still images, advanced on a timer (optionally Ken Burns). */
+    SLIDESHOW,
 }

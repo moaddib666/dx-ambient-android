@@ -151,6 +151,24 @@
     <string name="home_show">Mostrar</string>
     <string name="home_hidden_badge">Oculta</string>
 
+    <string name="editor_scene_type">Tipo de escena</string>
+    <string name="scene_type_video">Vídeo local</string>
+    <string name="scene_type_slideshow">Presentación</string>
+    <string name="editor_video_stream_link">URL del stream de vídeo</string>
+    <string name="editor_video_stream_hint">Pega una URL http(s) directa de stream de vídeo</string>
+    <string name="editor_youtube_link">Enlace de YouTube</string>
+    <string name="editor_youtube_link_hint">Pega un enlace de vídeo o lista de reproducción de YouTube</string>
+    <string name="editor_link_invalid_stream">Usa una URL http(s) directa de stream</string>
+    <string name="editor_link_invalid_youtube">Usa un enlace de vídeo o lista de reproducción de YouTube</string>
+    <string name="editor_images">Imágenes</string>
+    <string name="editor_images_empty_hint">Importa imágenes en la Biblioteca para crear una presentación.</string>
+    <string name="editor_slide_interval">Duración de diapositiva</string>
+    <string name="editor_slide_transition">Transición</string>
+    <string name="transition_none">Corte</string>
+    <string name="transition_crossfade">Fundido</string>
+    <string name="transition_ken_burns">Efecto Ken Burns</string>
+    <string name="seconds_format">%1$d s</string>
+
     <string name="player_paused">En pausa</string>
     <string name="player_pause_hint">OK reproducir/pausar · ◀ ▶ escena · ▲ ▼ máscara · BACK salir</string>
     <string name="player_mask_format">Máscara: %1$s</string>

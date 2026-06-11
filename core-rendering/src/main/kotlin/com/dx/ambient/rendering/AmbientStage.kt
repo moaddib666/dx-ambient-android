@@ -19,8 +19,10 @@ import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import coil.compose.AsyncImage
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
+import com.dx.ambient.domain.model.SceneKind
 import com.dx.ambient.domain.playback.PlaybackStatus
 import com.dx.ambient.playback.AmbientPlayer
+import com.dx.ambient.rendering.components.SlideshowLayer
 
 /**
  * Renders the active [scene]'s picture plus the projector-oriented overlays.
@@ -49,6 +51,7 @@ fun AmbientStage(
     // Boot/scene-change fade: hold black until the picture is actually playing, then cross-fade
     // the scene in. Combined with the black launch splash this gives a seamless "black → scene".
     val revealed = state.status == PlaybackStatus.PLAYING
+    val paused = state.status == PlaybackStatus.PAUSED
     val coverAlpha by animateFloatAsState(
         targetValue = if (revealed) 0f else 1f,
         animationSpec = tween(durationMillis = 900),
@@ -65,8 +68,17 @@ fun AmbientStage(
                 scaleX = scene.videoScale
                 scaleY = scene.videoScale
             }
-        when (scene.videoSource.type) {
-            MediaSourceType.LOCAL_IMAGE -> {
+        when {
+            // Slideshow scenes (and legacy single-image scenes, which resolve to SLIDESHOW):
+            // timed slides with cross-fade / Ken Burns, frozen while playback is paused.
+            scene.resolvedKind == SceneKind.SLIDESHOW && scene.slideshowImages.isNotEmpty() -> {
+                SlideshowLayer(
+                    scene = scene,
+                    paused = paused,
+                    modifier = videoTransform,
+                )
+            }
+            scene.videoSource.type == MediaSourceType.LOCAL_IMAGE -> {
                 AsyncImage(
                     model = scene.videoSource.uri,
                     contentDescription = scene.name,
@@ -74,7 +86,8 @@ fun AmbientStage(
                     modifier = videoTransform,
                 )
             }
-            MediaSourceType.LOCAL_VIDEO, MediaSourceType.STREAM -> {
+            scene.videoSource.type == MediaSourceType.LOCAL_VIDEO ||
+                scene.videoSource.type == MediaSourceType.STREAM -> {
                 PlayerSurface(
                     player = player.videoPlayer as Player,
                     // SurfaceView ignores Compose alpha/scale (it punches a hole behind the

@@ -150,6 +150,24 @@
     <string name="home_show">表示する</string>
     <string name="home_hidden_badge">非表示</string>
 
+    <string name="editor_scene_type">シーンの種類</string>
+    <string name="scene_type_video">ローカル動画</string>
+    <string name="scene_type_slideshow">スライドショー</string>
+    <string name="editor_video_stream_link">動画ストリームURL</string>
+    <string name="editor_video_stream_hint">http(s) の動画ストリームURLを直接貼り付けてください</string>
+    <string name="editor_youtube_link">YouTubeリンク</string>
+    <string name="editor_youtube_link_hint">YouTubeの動画またはプレイリストのリンクを貼り付けてください</string>
+    <string name="editor_link_invalid_stream">http(s) の直接ストリームURLを使用してください</string>
+    <string name="editor_link_invalid_youtube">YouTubeの動画またはプレイリストのリンクを使用してください</string>
+    <string name="editor_images">画像</string>
+    <string name="editor_images_empty_hint">ライブラリで画像をインポートするとスライドショーを作成できます。</string>
+    <string name="editor_slide_interval">スライドの表示時間</string>
+    <string name="editor_slide_transition">切り替え効果</string>
+    <string name="transition_none">カット</string>
+    <string name="transition_crossfade">クロスフェード</string>
+    <string name="transition_ken_burns">ケン・バーンズ効果</string>
+    <string name="seconds_format">%1$d秒</string>
+
     <string name="player_paused">一時停止中</string>
     <string name="player_pause_hint">OK 再生/一時停止 · ◀ ▶ シーン · ▲ ▼ マスク · BACK 終了</string>
     <string name="player_mask_format">マスク：%1$s</string>

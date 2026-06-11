@@ -12,6 +12,9 @@ import com.dx.ambient.domain.model.MediaKind
 import com.dx.ambient.domain.model.MediaSource
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
+import com.dx.ambient.domain.model.SceneKind
+import com.dx.ambient.domain.model.SlideTransition
+import com.dx.ambient.domain.model.SlideshowConfig
 import com.dx.ambient.domain.repository.MediaLibraryRepository
 import com.dx.ambient.domain.repository.SceneRepository
 import com.dx.ambient.domain.usecase.SaveSceneUseCase
@@ -108,13 +111,39 @@ class SceneEditorViewModel @Inject constructor(
     /** Load an existing scene by id, or start a fresh draft for null/blank. */
     fun bind(sceneId: String?) {
         if (sceneId.isNullOrBlank()) {
-            _draft.value = Scene(id = "", name = defaultSceneName())
+            _draft.value = newDraft()
             return
         }
         viewModelScope.launch {
-            _draft.value = sceneRepository.getScene(sceneId)
-                ?: Scene(id = "", name = defaultSceneName())
+            val loaded = sceneRepository.getScene(sceneId)
+            // Materialize the kind on legacy scenes so the editor's type selector and the
+            // per-type form bind to an explicit value.
+            _draft.value = loaded?.copy(kind = loaded.resolvedKind) ?: newDraft()
         }
+    }
+
+    private fun newDraft() = Scene(id = "", name = defaultSceneName(), kind = SceneKind.VIDEO)
+
+    /**
+     * Switch the scene type, swapping the editor form. The picture source is cleared when it
+     * doesn't belong to the new type; everything the forms share (name, audio, mask,
+     * brightness/opacity/scale, mute) carries over.
+     */
+    fun setKind(kind: SceneKind) {
+        val current = _draft.value
+        if (current.resolvedKind == kind && current.kind == kind) return
+        val sourceFits = when (kind) {
+            SceneKind.VIDEO ->
+                current.videoSource.type == MediaSourceType.LOCAL_VIDEO ||
+                    current.videoSource.type == MediaSourceType.STREAM
+            SceneKind.YOUTUBE -> current.videoSource.isYouTube
+            SceneKind.SLIDESHOW -> current.videoSource.type == MediaSourceType.LOCAL_IMAGE
+        }
+        _draft.value = current.copy(
+            kind = kind,
+            videoSource = if (sourceFits) current.videoSource else MediaSource.NONE,
+            videoPlaylist = if (sourceFits) current.videoPlaylist else emptyList(),
+        )
     }
 
     private fun defaultSceneName(): String = context.getString(R.string.editor_default_scene_name)
@@ -125,12 +154,18 @@ class SceneEditorViewModel @Inject constructor(
 
     /** Pick the picture source (MVP feature 4). */
     fun pickVideo(media: LibraryMedia) {
-        _draft.value = _draft.value.copy(videoSource = media.toMediaSource())
+        _draft.value = _draft.value.copy(
+            kind = SceneKind.VIDEO,
+            videoSource = media.toMediaSource(),
+        )
     }
 
     /** Pick a YouTube playlist (the user's own or built-in) as the picture source. */
     fun pickYouTubePlaylist(playlist: CatalogPlaylist) {
-        _draft.value = _draft.value.copy(videoSource = youTubeCatalog.playlistSource(playlist))
+        _draft.value = _draft.value.copy(
+            kind = SceneKind.YOUTUBE,
+            videoSource = youTubeCatalog.playlistSource(playlist),
+        )
     }
 
     /**
@@ -140,8 +175,80 @@ class SceneEditorViewModel @Inject constructor(
      */
     fun setVideoLink(input: String): Boolean {
         val source = parseLink(input) ?: return false
-        _draft.value = _draft.value.copy(videoSource = source)
+        _draft.value = _draft.value.copy(
+            kind = if (source.isYouTube) SceneKind.YOUTUBE else SceneKind.VIDEO,
+            videoSource = source,
+        )
         return true
+    }
+
+    /**
+     * Video-form link input: accepts only a direct http(s) stream URL. YouTube links are
+     * rejected — they belong to the YouTube form. Returns false on unusable input.
+     */
+    fun setVideoStreamLink(input: String): Boolean {
+        val trimmed = input.trim()
+        if (youTubeCatalog.parseLink(trimmed) != null) return false
+        if (!trimmed.isHttpUrl()) return false
+        _draft.value = _draft.value.copy(
+            kind = SceneKind.VIDEO,
+            videoSource = MediaSource(
+                uri = trimmed,
+                type = MediaSourceType.STREAM,
+                displayName = trimmed.toDisplayHost(),
+            ),
+        )
+        return true
+    }
+
+    /**
+     * YouTube-form link input: accepts only a YouTube video/playlist link.
+     * Returns false on anything else.
+     */
+    fun setYouTubeLink(input: String): Boolean {
+        val source = youTubeCatalog.parseLink(input.trim()) ?: return false
+        _draft.value = _draft.value.copy(kind = SceneKind.YOUTUBE, videoSource = source)
+        return true
+    }
+
+    /**
+     * Toggle an image's membership in the slideshow (multi-select picker). The image list
+     * lives in `videoSource` (head) + `videoPlaylist` (rest), preserving selection order.
+     */
+    fun toggleSlideshowImage(media: LibraryMedia) {
+        val current = _draft.value
+        val images = current.slideshowImages
+        val next = if (images.any { it.uri == media.uri }) {
+            images.filterNot { it.uri == media.uri }
+        } else {
+            images + media.toMediaSource()
+        }
+        _draft.value = current.copy(
+            kind = SceneKind.SLIDESHOW,
+            videoSource = next.firstOrNull() ?: MediaSource.NONE,
+            videoPlaylist = next.drop(1),
+        )
+    }
+
+    /** Set how long each slide stays on screen, clamped to the supported range. */
+    fun setSlideIntervalMs(intervalMs: Long) {
+        val current = _draft.value
+        _draft.value = current.copy(
+            slideshow = current.slideshow.copy(
+                intervalMs = intervalMs.coerceIn(
+                    SlideshowConfig.MIN_INTERVAL_MS,
+                    SlideshowConfig.MAX_INTERVAL_MS,
+                ),
+            ),
+        )
+    }
+
+    /** Cycle to the next slideshow [SlideTransition] (cut → cross-fade → Ken Burns). */
+    fun cycleSlideTransition() {
+        val current = _draft.value
+        val values = SlideTransition.entries
+        val next = values[(values.indexOf(current.slideshow.transition) + 1) % values.size]
+        _draft.value = current.copy(slideshow = current.slideshow.copy(transition = next))
     }
 
     /**

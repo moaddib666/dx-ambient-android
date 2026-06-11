@@ -153,6 +153,24 @@
     <string name="home_show">Показати</string>
     <string name="home_hidden_badge">Сховано</string>
 
+    <string name="editor_scene_type">Тип сцени</string>
+    <string name="scene_type_video">Локальне відео</string>
+    <string name="scene_type_slideshow">Слайдшоу</string>
+    <string name="editor_video_stream_link">URL відеопотоку</string>
+    <string name="editor_video_stream_hint">Вставте пряме http(s) посилання на відеопотік</string>
+    <string name="editor_youtube_link">Посилання YouTube</string>
+    <string name="editor_youtube_link_hint">Вставте посилання на відео або плейлист YouTube</string>
+    <string name="editor_link_invalid_stream">Використайте пряме http(s) посилання на потік</string>
+    <string name="editor_link_invalid_youtube">Використайте посилання на відео або плейлист YouTube</string>
+    <string name="editor_images">Зображення</string>
+    <string name="editor_images_empty_hint">Імпортуйте зображення в Бібліотеці, щоб створити слайдшоу.</string>
+    <string name="editor_slide_interval">Тривалість слайда</string>
+    <string name="editor_slide_transition">Перехід</string>
+    <string name="transition_none">Без переходу</string>
+    <string name="transition_crossfade">Плавний перехід</string>
+    <string name="transition_ken_burns">Ефект Кена Бернса</string>
+    <string name="seconds_format">%1$d с</string>
+
     <string name="player_paused">Пауза</string>
     <string name="player_pause_hint">OK відтворення/пауза · ◀ ▶ сцена · ▲ ▼ маска · BACK вихід</string>
     <string name="player_mask_format">Маска: %1$s</string>

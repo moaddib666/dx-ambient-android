@@ -182,6 +182,25 @@
     <string name="home_show">Show</string>
     <string name="home_hidden_badge">Hidden</string>
 
+    <!-- Scene editor: scene types + slideshow -->
+    <string name="editor_scene_type">Scene type</string>
+    <string name="scene_type_video">Local video</string>
+    <string name="scene_type_slideshow">Slideshow</string>
+    <string name="editor_video_stream_link">Video stream URL</string>
+    <string name="editor_video_stream_hint">Paste a direct http(s) video stream URL</string>
+    <string name="editor_youtube_link">YouTube link</string>
+    <string name="editor_youtube_link_hint">Paste a YouTube video or playlist link</string>
+    <string name="editor_link_invalid_stream">Use a direct http(s) stream URL</string>
+    <string name="editor_link_invalid_youtube">Use a YouTube video or playlist link</string>
+    <string name="editor_images">Images</string>
+    <string name="editor_images_empty_hint">Import images in Library to build a slideshow.</string>
+    <string name="editor_slide_interval">Slide duration</string>
+    <string name="editor_slide_transition">Transition</string>
+    <string name="transition_none">Cut</string>
+    <string name="transition_crossfade">Cross-fade</string>
+    <string name="transition_ken_burns">Ken Burns</string>
+    <string name="seconds_format">%1$d s</string>
+
     <!-- Player pause/loading overlay -->
     <string name="player_paused">Paused</string>
     <string name="player_pause_hint">OK play/pause · ◀ ▶ scene · ▲ ▼ mask · BACK exit</string>

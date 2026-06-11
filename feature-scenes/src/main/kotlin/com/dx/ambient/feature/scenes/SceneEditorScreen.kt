@@ -55,6 +55,9 @@ import coil.compose.AsyncImage
 import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
+import com.dx.ambient.domain.model.SceneKind
+import com.dx.ambient.domain.model.SlideTransition
+import com.dx.ambient.domain.model.SlideshowConfig
 import com.dx.ambient.rendering.AmbientStage
 import com.dx.ambient.rendering.R
 import com.dx.ambient.rendering.components.PrimaryButton
@@ -81,6 +84,7 @@ fun SceneEditorScreen(
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val videos by viewModel.videos.collectAsStateWithLifecycle()
     val audios by viewModel.audios.collectAsStateWithLifecycle()
+    val images by viewModel.images.collectAsStateWithLifecycle()
     val masks by viewModel.masks.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val youTubeAvailable by viewModel.youTubeAvailable.collectAsStateWithLifecycle()
@@ -137,48 +141,77 @@ fun SceneEditorScreen(
 
             NameField(name = draft.name, onNameChange = viewModel::setName)
 
-            MediaPickerRow(
-                label = stringResource(R.string.editor_video_source),
-                media = videos,
-                selectedUri = draft.videoSource.uri.takeIf {
-                    draft.videoSource.type == MediaSourceType.LOCAL_VIDEO
-                },
-                onPick = viewModel::pickVideo,
-                emptyHint = stringResource(R.string.editor_video_empty_hint),
-            )
+            // The scene type decides which source form is shown below; the sections after
+            // the form (audio, mask, appearance) are shared by every type.
+            SceneTypeRow(selected = draft.resolvedKind, onSelect = viewModel::setKind)
 
-            // Remote picture sources: a pasted YouTube/stream link, the signed-in user's
-            // playlists, and the playlists bundled with the app.
-            LinkInputRow(
-                label = stringResource(R.string.editor_video_link),
-                hint = stringResource(R.string.editor_video_link_hint),
-                selectedName = when (draft.videoSource.type) {
-                    MediaSourceType.YOUTUBE, MediaSourceType.STREAM ->
-                        draft.videoSource.displayName ?: draft.videoSource.uri
-                    else -> null
-                },
-                onApply = viewModel::setVideoLink,
-            )
+            when (draft.resolvedKind) {
+                SceneKind.VIDEO -> {
+                    MediaPickerRow(
+                        label = stringResource(R.string.editor_video_source),
+                        media = videos,
+                        selectedUri = draft.videoSource.uri.takeIf {
+                            draft.videoSource.type == MediaSourceType.LOCAL_VIDEO
+                        },
+                        onPick = viewModel::pickVideo,
+                        emptyHint = stringResource(R.string.editor_video_empty_hint),
+                    )
+                    LinkInputRow(
+                        label = stringResource(R.string.editor_video_stream_link),
+                        hint = stringResource(R.string.editor_video_stream_hint),
+                        invalidMessage = stringResource(R.string.editor_link_invalid_stream),
+                        selectedName = draft.videoSource.displayName.takeIf {
+                            draft.videoSource.type == MediaSourceType.STREAM
+                        },
+                        onApply = viewModel::setVideoStreamLink,
+                    )
+                }
 
-            if (youTubeAvailable && myPlaylists.isNotEmpty()) {
-                PlaylistChipsRow(
-                    label = stringResource(R.string.editor_my_playlists),
-                    playlists = myPlaylists,
-                    selectedUri = draft.videoSource.uri.takeIf {
-                        draft.videoSource.type == MediaSourceType.YOUTUBE
-                    },
-                    onPick = viewModel::pickYouTubePlaylist,
-                )
-            }
-            if (viewModel.builtInPlaylists.isNotEmpty()) {
-                PlaylistChipsRow(
-                    label = stringResource(R.string.editor_builtin_playlists),
-                    playlists = viewModel.builtInPlaylists,
-                    selectedUri = draft.videoSource.uri.takeIf {
-                        draft.videoSource.type == MediaSourceType.YOUTUBE
-                    },
-                    onPick = viewModel::pickYouTubePlaylist,
-                )
+                SceneKind.YOUTUBE -> {
+                    LinkInputRow(
+                        label = stringResource(R.string.editor_youtube_link),
+                        hint = stringResource(R.string.editor_youtube_link_hint),
+                        invalidMessage = stringResource(R.string.editor_link_invalid_youtube),
+                        selectedName = (draft.videoSource.displayName ?: draft.videoSource.uri)
+                            .takeIf { draft.videoSource.isYouTube },
+                        onApply = viewModel::setYouTubeLink,
+                    )
+                    if (youTubeAvailable && myPlaylists.isNotEmpty()) {
+                        PlaylistChipsRow(
+                            label = stringResource(R.string.editor_my_playlists),
+                            playlists = myPlaylists,
+                            selectedUri = draft.videoSource.uri.takeIf { draft.videoSource.isYouTube },
+                            onPick = viewModel::pickYouTubePlaylist,
+                        )
+                    }
+                    if (viewModel.builtInPlaylists.isNotEmpty()) {
+                        PlaylistChipsRow(
+                            label = stringResource(R.string.editor_builtin_playlists),
+                            playlists = viewModel.builtInPlaylists,
+                            selectedUri = draft.videoSource.uri.takeIf { draft.videoSource.isYouTube },
+                            onPick = viewModel::pickYouTubePlaylist,
+                        )
+                    }
+                }
+
+                SceneKind.SLIDESHOW -> {
+                    ImageGalleryRow(
+                        images = images,
+                        selected = draft.slideshowImages.map { it.uri },
+                        onToggle = viewModel::toggleSlideshowImage,
+                    )
+                    SecondsStepper(
+                        label = stringResource(R.string.editor_slide_interval),
+                        valueMs = draft.slideshow.intervalMs,
+                        onChange = viewModel::setSlideIntervalMs,
+                    )
+                    ToggleRow(label = stringResource(R.string.editor_slide_transition)) {
+                        PrimaryButton(
+                            text = transitionLabel(draft.slideshow.transition),
+                            onClick = viewModel::cycleSlideTransition,
+                        )
+                    }
+                }
             }
 
             MediaPickerRow(
@@ -196,6 +229,7 @@ fun SceneEditorScreen(
             LinkInputRow(
                 label = stringResource(R.string.editor_audio_stream),
                 hint = null,
+                invalidMessage = stringResource(R.string.editor_link_invalid_stream),
                 selectedName = draft.audioSource.displayName.takeIf {
                     draft.audioSource.type == MediaSourceType.STREAM
                 },
@@ -209,7 +243,7 @@ fun SceneEditorScreen(
                 onClear = viewModel::clearMask,
                 onPreview = { showMaskPreview = true }.takeIf {
                     draft.videoSource.type == MediaSourceType.LOCAL_VIDEO ||
-                        draft.videoSource.type == MediaSourceType.LOCAL_IMAGE
+                        draft.slideshowImages.isNotEmpty()
                 },
             )
 
@@ -233,8 +267,12 @@ fun SceneEditorScreen(
                 onChange = viewModel::setVideoScale,
             )
 
-            ToggleRow(label = stringResource(R.string.editor_loop_mode)) {
-                PrimaryButton(text = loopModeLabel(draft), onClick = viewModel::cycleLoopMode)
+            // Loop mode applies to ExoPlayer playlists and slideshows; the YouTube IFrame
+            // player loops its own playlist, so the control is hidden there.
+            if (draft.resolvedKind != SceneKind.YOUTUBE) {
+                ToggleRow(label = stringResource(R.string.editor_loop_mode)) {
+                    PrimaryButton(text = loopModeLabel(draft), onClick = viewModel::cycleLoopMode)
+                }
             }
 
             ToggleRow(label = stringResource(R.string.editor_muted)) {
@@ -572,6 +610,160 @@ private fun MaskTile(
     }
 }
 
+/** The three scene types as a chips row; selecting one swaps the source form. */
+@Composable
+private fun SceneTypeRow(selected: SceneKind, onSelect: (SceneKind) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.editor_scene_type),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            SceneKind.entries.forEach { kind ->
+                MediaChip(
+                    text = when (kind) {
+                        SceneKind.VIDEO -> stringResource(R.string.scene_type_video)
+                        SceneKind.YOUTUBE -> stringResource(R.string.youtube_label)
+                        SceneKind.SLIDESHOW -> stringResource(R.string.scene_type_slideshow)
+                    },
+                    selected = selected == kind,
+                    onClick = { onSelect(kind) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Multi-select image gallery for slideshows: every imported image renders as a 16:9
+ * thumbnail; selecting toggles membership and shows the slide's position in the show.
+ */
+@Composable
+private fun ImageGalleryRow(
+    images: List<LibraryMedia>,
+    selected: List<String>,
+    onToggle: (LibraryMedia) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.editor_images),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        if (images.isEmpty()) {
+            Text(
+                text = stringResource(R.string.editor_images_empty_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        } else {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(items = images, key = { it.uri }) { image ->
+                    ImageTile(
+                        image = image,
+                        selectionIndex = selected.indexOf(image.uri).takeIf { it >= 0 },
+                        onClick = { onToggle(image) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImageTile(
+    image: LibraryMedia,
+    /** Zero-based position in the slideshow, or null when the image isn't selected. */
+    selectionIndex: Int?,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(10.dp)
+    val selected = selectionIndex != null
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .width(168.dp)
+            .touchClickable(onClick = onClick),
+        shape = androidx.tv.material3.CardDefaults.shape(shape),
+    ) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
+            AsyncImage(
+                model = image.uri,
+                contentDescription = image.displayName,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0.55f to Color.Transparent,
+                            1f to Color.Black.copy(alpha = 0.8f),
+                        ),
+                    ),
+            )
+            if (selected) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .border(width = 2.dp, color = Color(0xFF00E5FF), shape = shape),
+                )
+            }
+            Text(
+                text = if (selectionIndex != null) {
+                    "${selectionIndex + 1} · ${image.displayName}"
+                } else {
+                    image.displayName
+                },
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (selected) Color(0xFF00E5FF) else Color.White,
+                modifier = Modifier
+                    .align(androidx.compose.ui.Alignment.BottomStart)
+                    .padding(8.dp),
+            )
+        }
+    }
+}
+
+/** Stepper over a millisecond value displayed as whole seconds (slide duration). */
+@Composable
+private fun SecondsStepper(
+    label: String,
+    valueMs: Long,
+    onChange: (Long) -> Unit,
+) {
+    ToggleRow(label = label) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            PrimaryButton(
+                text = "-",
+                onClick = { onChange(valueMs - 1_000L) },
+                enabled = valueMs > SlideshowConfig.MIN_INTERVAL_MS,
+            )
+            Text(
+                text = stringResource(R.string.seconds_format, (valueMs / 1_000L).toInt()),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            PrimaryButton(
+                text = "+",
+                onClick = { onChange(valueMs + 1_000L) },
+                enabled = valueMs < SlideshowConfig.MAX_INTERVAL_MS,
+            )
+        }
+    }
+}
+
+@Composable
+private fun transitionLabel(transition: SlideTransition): String = when (transition) {
+    SlideTransition.NONE -> stringResource(R.string.transition_none)
+    SlideTransition.CROSSFADE -> stringResource(R.string.transition_crossfade)
+    SlideTransition.KEN_BURNS -> stringResource(R.string.transition_ken_burns)
+}
+
 @Composable
 private fun MediaChip(text: String, selected: Boolean, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.touchClickable(onClick = onClick)) {
@@ -591,13 +783,15 @@ private fun MediaChip(text: String, selected: Boolean, onClick: () -> Unit) {
 
 /**
  * Single-line URL entry with an apply button — used for YouTube/stream video links and
- * audio stream URLs. [onApply] returns false for unusable input, which shows an inline
- * error; on success the field clears and [selectedName] echoes the chosen source.
+ * audio stream URLs. [onApply] returns false for unusable input, which shows
+ * [invalidMessage] inline; on success the field clears and [selectedName] echoes the
+ * chosen source.
  */
 @Composable
 private fun LinkInputRow(
     label: String,
     hint: String?,
+    invalidMessage: String,
     selectedName: String?,
     onApply: (String) -> Boolean,
 ) {
@@ -663,7 +857,7 @@ private fun LinkInputRow(
         }
         when {
             invalid -> Text(
-                text = stringResource(R.string.editor_link_invalid),
+                text = invalidMessage,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )

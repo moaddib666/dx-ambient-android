@@ -151,6 +151,24 @@
     <string name="home_show">Einblenden</string>
     <string name="home_hidden_badge">Ausgeblendet</string>
 
+    <string name="editor_scene_type">Szenentyp</string>
+    <string name="scene_type_video">Lokales Video</string>
+    <string name="scene_type_slideshow">Diashow</string>
+    <string name="editor_video_stream_link">Video-Stream-URL</string>
+    <string name="editor_video_stream_hint">Direkte http(s)-Video-Stream-URL einfügen</string>
+    <string name="editor_youtube_link">YouTube-Link</string>
+    <string name="editor_youtube_link_hint">YouTube-Video- oder Playlist-Link einfügen</string>
+    <string name="editor_link_invalid_stream">Direkte http(s)-Stream-URL verwenden</string>
+    <string name="editor_link_invalid_youtube">YouTube-Video- oder Playlist-Link verwenden</string>
+    <string name="editor_images">Bilder</string>
+    <string name="editor_images_empty_hint">Importiere Bilder in der Mediathek, um eine Diashow zu erstellen.</string>
+    <string name="editor_slide_interval">Bilddauer</string>
+    <string name="editor_slide_transition">Übergang</string>
+    <string name="transition_none">Harter Schnitt</string>
+    <string name="transition_crossfade">Überblenden</string>
+    <string name="transition_ken_burns">Ken-Burns-Effekt</string>
+    <string name="seconds_format">%1$d s</string>
+
     <string name="player_paused">Pausiert</string>
     <string name="player_pause_hint">OK Wiedergabe/Pause · ◀ ▶ Szene · ▲ ▼ Maske · BACK Beenden</string>
     <string name="player_mask_format">Maske: %1$s</string>

@@ -8,6 +8,9 @@ import com.dx.ambient.domain.model.LoopMode
 import com.dx.ambient.domain.model.MediaKind
 import com.dx.ambient.domain.model.MediaSource
 import com.dx.ambient.domain.model.MediaSourceType
+import com.dx.ambient.domain.model.SceneKind
+import com.dx.ambient.domain.model.SlideTransition
+import com.dx.ambient.domain.model.SlideshowConfig
 import com.dx.ambient.domain.usecase.SaveSceneUseCase
 import com.dx.ambient.playback.AmbientPlayer
 import io.mockk.every
@@ -163,6 +166,91 @@ class SceneEditorViewModelTest {
         assertEquals(MediaSourceType.STREAM, vm.draft.value.audioSource.type)
         assertFalse(vm.setAudioStream("ftp://radio.example.com/lofi"))
         assertFalse(vm.setAudioStream("just words"))
+    }
+
+    @Test
+    fun `new draft starts as a video scene`() {
+        val vm = newViewModel()
+        vm.bind(null)
+        assertEquals(SceneKind.VIDEO, vm.draft.value.resolvedKind)
+    }
+
+    @Test
+    fun `setKind clears a picture source that does not fit the new type`() {
+        val vm = newViewModel()
+        vm.bind(null)
+        vm.pickVideo(LibraryMedia("u-v", "fire.mp4", "video/mp4", MediaKind.VIDEO, sourceTreeUri = "t"))
+        assertEquals(MediaSourceType.LOCAL_VIDEO, vm.draft.value.videoSource.type)
+
+        vm.setKind(SceneKind.SLIDESHOW)
+        assertEquals(SceneKind.SLIDESHOW, vm.draft.value.resolvedKind)
+        assertEquals(MediaSourceType.NONE, vm.draft.value.videoSource.type)
+        assertTrue(vm.draft.value.videoPlaylist.isEmpty())
+    }
+
+    @Test
+    fun `setKind keeps shared parts like audio and mask`() {
+        val vm = newViewModel()
+        vm.bind(null)
+        vm.pickAudio(LibraryMedia("u-a", "rain.mp3", "audio/mp3", MediaKind.AUDIO, sourceTreeUri = "t"))
+        vm.pickMask(LibraryMedia("u-m", "frame.png", "image/png", MediaKind.IMAGE, sourceTreeUri = "t"))
+
+        vm.setKind(SceneKind.SLIDESHOW)
+        assertEquals(MediaSourceType.LOCAL_AUDIO, vm.draft.value.audioSource.type)
+        assertTrue(vm.draft.value.mask.enabled)
+    }
+
+    @Test
+    fun `toggleSlideshowImage adds and removes images preserving order`() {
+        val vm = newViewModel()
+        vm.bind(null)
+        val a = LibraryMedia("u-1", "a.jpg", "image/jpeg", MediaKind.IMAGE, sourceTreeUri = "t")
+        val b = LibraryMedia("u-2", "b.jpg", "image/jpeg", MediaKind.IMAGE, sourceTreeUri = "t")
+
+        vm.toggleSlideshowImage(a)
+        vm.toggleSlideshowImage(b)
+        assertEquals(SceneKind.SLIDESHOW, vm.draft.value.resolvedKind)
+        assertEquals(listOf("u-1", "u-2"), vm.draft.value.slideshowImages.map { it.uri })
+        // The list is stored as videoSource head + videoPlaylist tail.
+        assertEquals("u-1", vm.draft.value.videoSource.uri)
+        assertEquals(listOf("u-2"), vm.draft.value.videoPlaylist.map { it.uri })
+
+        vm.toggleSlideshowImage(a)
+        assertEquals(listOf("u-2"), vm.draft.value.slideshowImages.map { it.uri })
+        assertEquals("u-2", vm.draft.value.videoSource.uri)
+        assertTrue(vm.draft.value.videoPlaylist.isEmpty())
+    }
+
+    @Test
+    fun `setSlideIntervalMs clamps to the supported range`() {
+        val vm = newViewModel()
+        vm.setSlideIntervalMs(1L)
+        assertEquals(SlideshowConfig.MIN_INTERVAL_MS, vm.draft.value.slideshow.intervalMs)
+        vm.setSlideIntervalMs(Long.MAX_VALUE)
+        assertEquals(SlideshowConfig.MAX_INTERVAL_MS, vm.draft.value.slideshow.intervalMs)
+    }
+
+    @Test
+    fun `cycleSlideTransition wraps through all transitions`() {
+        val vm = newViewModel()
+        val start = vm.draft.value.slideshow.transition
+        repeat(SlideTransition.entries.size) { vm.cycleSlideTransition() }
+        assertEquals(start, vm.draft.value.slideshow.transition)
+    }
+
+    @Test
+    fun `setVideoStreamLink accepts http URLs only and sets the video kind`() {
+        val vm = newViewModel()
+        assertTrue(vm.setVideoStreamLink("https://example.com/ambient.mp4"))
+        assertEquals(SceneKind.VIDEO, vm.draft.value.resolvedKind)
+        assertEquals(MediaSourceType.STREAM, vm.draft.value.videoSource.type)
+        assertFalse(vm.setVideoStreamLink("not a url"))
+    }
+
+    @Test
+    fun `setYouTubeLink rejects input the catalog does not recognize`() {
+        val vm = newViewModel()
+        assertFalse(vm.setYouTubeLink("https://example.com/ambient.mp4"))
     }
 
     @Test

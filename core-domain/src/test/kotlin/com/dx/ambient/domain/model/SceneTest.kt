@@ -50,4 +50,44 @@ class SceneTest {
         assertEquals(Scene.DEFAULT_BRIGHTNESS, Scene(id = "1", name = "s").brightness)
         assertTrue(Scene.DEFAULT_BRIGHTNESS < 1f)
     }
+
+    @Test
+    fun `resolvedKind derives the kind for legacy scenes without one`() {
+        assertEquals(SceneKind.VIDEO, Scene(id = "1", name = "s", videoSource = video).resolvedKind)
+        assertEquals(
+            SceneKind.YOUTUBE,
+            Scene(
+                id = "1",
+                name = "s",
+                videoSource = MediaSource("https://youtu.be/x", MediaSourceType.YOUTUBE),
+            ).resolvedKind,
+        )
+        assertEquals(
+            SceneKind.SLIDESHOW,
+            Scene(
+                id = "1",
+                name = "s",
+                videoSource = MediaSource("content://img", MediaSourceType.LOCAL_IMAGE),
+            ).resolvedKind,
+        )
+    }
+
+    @Test
+    fun `resolvedKind prefers the persisted kind over derivation`() {
+        val scene = Scene(id = "1", name = "s", kind = SceneKind.SLIDESHOW, videoSource = video)
+        assertEquals(SceneKind.SLIDESHOW, scene.resolvedKind)
+    }
+
+    @Test
+    fun `slideshowImages keeps only image sources from the picture playlist`() {
+        val image1 = MediaSource("content://i1", MediaSourceType.LOCAL_IMAGE)
+        val image2 = MediaSource("content://i2", MediaSourceType.LOCAL_IMAGE)
+        val scene = Scene(
+            id = "1",
+            name = "s",
+            videoSource = image1,
+            videoPlaylist = listOf(video, image2),
+        )
+        assertEquals(listOf(image1, image2), scene.slideshowImages)
+    }
 }

@@ -47,6 +47,13 @@ class AmbientPlayer @Inject constructor(
 
     private var hasSeparateAudio = false
 
+    /**
+     * False for scenes whose picture is not ExoPlayer's (slideshow, single image, audio-only).
+     * Status is then driven by the audio player, or held manually when there is no audio either,
+     * so such scenes still reach PLAYING (lifting the reveal cover) and pause correctly.
+     */
+    private var hasVideoItems = false
+
     private val videoListener = object : Player.Listener {
         override fun onPlaybackStateChanged(playbackState: Int) = syncStatus()
         override fun onIsPlayingChanged(isPlaying: Boolean) = syncStatus()
@@ -58,8 +65,11 @@ class AmbientPlayer @Inject constructor(
         }
     }
 
-    // Surface separate-soundtrack failures too (e.g. fireplace video + rain audio).
+    // Surface separate-soundtrack failures too (e.g. fireplace video + rain audio),
+    // and drive the status when the soundtrack is the only playing media.
     private val audioListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) = syncStatus()
+        override fun onIsPlayingChanged(isPlaying: Boolean) = syncStatus()
         override fun onPlayerError(error: PlaybackException) {
             _state.value = _state.value.copy(
                 status = PlaybackStatus.ERROR,
@@ -95,6 +105,7 @@ class AmbientPlayer @Inject constructor(
             .filter { it.type == MediaSourceType.LOCAL_VIDEO || it.type == MediaSourceType.STREAM }
             .map { MediaItem.fromUri(it.uri) }
 
+        hasVideoItems = videoItems.isNotEmpty()
         video.applyRepeatMode(scene.loopMode)
         video.shuffleModeEnabled = scene.loopMode == LoopMode.SHUFFLE_PLAYLIST
         video.setMediaItems(videoItems)
@@ -111,7 +122,7 @@ class AmbientPlayer @Inject constructor(
         }
 
         applyVolume(scene.muted)
-        video.prepare()
+        if (hasVideoItems) video.prepare() else video.stop()
 
         _state.value = PlaybackState(
             activeSceneId = scene.id,
@@ -125,11 +136,19 @@ class AmbientPlayer @Inject constructor(
     override fun play() {
         video.playWhenReady = true
         if (hasSeparateAudio) audio.playWhenReady = true
+        if (!hasVideoItems && !hasSeparateAudio) {
+            // Nothing for ExoPlayer to report on — the picture is rendered elsewhere
+            // (slideshow/still image), so the status is held manually.
+            _state.value = _state.value.copy(status = PlaybackStatus.PLAYING, errorMessage = null)
+        }
     }
 
     override fun pause() {
         video.playWhenReady = false
         audio.playWhenReady = false
+        if (!hasVideoItems && !hasSeparateAudio) {
+            _state.value = _state.value.copy(status = PlaybackStatus.PAUSED, errorMessage = null)
+        }
     }
 
     override fun stop() {
@@ -186,12 +205,19 @@ class AmbientPlayer @Inject constructor(
     }
 
     private fun syncStatus() {
+        // The player carrying the scene's actual media drives the status; with neither
+        // video nor separate audio the status is held manually by play()/pause().
+        val driver = when {
+            hasVideoItems -> video
+            hasSeparateAudio -> audio
+            else -> return
+        }
         val status = when {
-            video.playerError != null -> PlaybackStatus.ERROR
-            video.playbackState == Player.STATE_BUFFERING -> PlaybackStatus.BUFFERING
-            video.playbackState == Player.STATE_ENDED -> PlaybackStatus.ENDED
-            video.isPlaying -> PlaybackStatus.PLAYING
-            video.playbackState == Player.STATE_READY -> PlaybackStatus.PAUSED
+            driver.playerError != null -> PlaybackStatus.ERROR
+            driver.playbackState == Player.STATE_BUFFERING -> PlaybackStatus.BUFFERING
+            driver.playbackState == Player.STATE_ENDED -> PlaybackStatus.ENDED
+            driver.isPlaying -> PlaybackStatus.PLAYING
+            driver.playbackState == Player.STATE_READY -> PlaybackStatus.PAUSED
             else -> PlaybackStatus.IDLE
         }
         _state.value = _state.value.copy(status = status, errorMessage = null)
