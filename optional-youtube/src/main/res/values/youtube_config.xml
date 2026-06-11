@@ -18,6 +18,10 @@
 
       While this is blank the YouTube tab shows a "setup required" notice instead
       of attempting sign-in. Playback always stays on the official IFrame player.
+
+      Configured against the `dimension-x-live` Cloud project: YouTube Data API v3
+      enabled, youtube.readonly scope registered, Android clients exist for the
+      debug, upload and Play App Signing certificates of `com.dx.ambient`.
     -->
-    <string name="youtube_web_client_id" translatable="false"></string>
+    <string name="youtube_web_client_id" translatable="false">660131287579-46hjjk3qbsp5ksob5fg51a1n7ovon1dm.apps.googleusercontent.com</string>
 </resources>

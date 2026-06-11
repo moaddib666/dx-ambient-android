@@ -23,7 +23,7 @@ flowchart LR
 ## M1 — Ship blockers (Play Console will reject without these)
 
 - [x] **Store graphics** — done: icon, feature graphic, TV banner, 4 TV screenshots and 3 phone screenshots live in `app/src/main/play/listings/en-GB/graphics/` and were uploaded to Play via `./gradlew publishListing`.
-- [ ] **Deploy the privacy policy** — `web/ambient/privacy/index.html` must actually be live at `https://dimension-x.live/ambient/privacy/` before submitting the Data Safety form. **(manual — needs hosting access)**
+- [x] **Deploy the privacy policy** — live at `https://dimension-x.live/ambient/privacy/index.html` (use the full URL incl. `index.html`; the bare directory path returns 404).
 - [x] **Fix the Room migration trap** — done: `exportSchema = true` with `core-data/schemas/` committed, destructive fallback removed, `AmbientDatabaseMigrations` scaffold wired into the builder.
 - [x] **Version discipline** — handled: Gradle Play Publisher `resolutionStrategy = AUTO` bumps the versionCode past the highest one on Play at upload time.
 
@@ -50,7 +50,7 @@ The README is explicit that UI behaviour, SAF/USB import, and the WebView path a
 ## M4 — Production launch
 
 - [ ] Promote from internal → production: **blocked by Google's personal-account policy** — needs 12 opted-in closed-test testers for 14 consecutive days, then "Apply for production" in the Console. Afterwards: `./gradlew promoteReleaseArtifact --from-track internal --promote-track production`. **(manual + waiting period)**
-- [x] YouTube mode posture for v1 — done: the Home entry is gated behind `BuildConfig.YOUTUBE_MODE_ENABLED` (false) until OAuth replaces the demo playlist; launch is purely local-first.
+- [x] YouTube mode posture — superseded: real OAuth sign-in is configured (dimension-x-live Cloud project) and `YOUTUBE_MODE_ENABLED` is on; the demo playlist is removed.
 - [ ] Verify the listing renders correctly on the TV store surface (banner, screenshots, description).
 
 ## M5 — Post-launch hardening
@@ -78,7 +78,7 @@ Robustness:
 
 ## M6 — Feature growth (post-1.x)
 
-- [ ] **YouTube OAuth** — finish real sign-in + "my playlists" via Play Services Authorization, replacing the demo playlist; keep the IFrame-only, no-background-playback policy.
+- [x] **YouTube OAuth** — done: youtube.readonly sign-in via Play Services Authorization against the `dimension-x-live` project (Android clients for debug/upload/Play-signing certs + Web client ID in `youtube_config.xml`); demo playlist removed; IFrame-only policy unchanged. Note: the consent screen is in **Testing** mode (test users: dimensionxlive@, moaddib666@) — grants expire every 7 days until the app is published & verified for the sensitive scope.
 - [ ] **Burn-in protection** — the `ProjectorSettings.burnInProtection` flag exists but no pixel-shift logic is implemented in rendering; implement subtle periodic image shift.
 - [ ] **Resume-on-launch polish** — verify `resumeLastSceneOnLaunch` + `lastSceneId` works from a cold boot on TV (auto-start into the player).
 - [ ] **True alpha compositing** — documented upgrade path in `AmbientStage.kt:35-36`: move masks/dim from Compose overlays to Media3 video effects (`OverlayEffect`) for correctness on HDR/tiered devices.

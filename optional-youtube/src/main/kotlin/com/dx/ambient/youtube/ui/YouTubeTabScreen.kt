@@ -40,14 +40,7 @@ import com.dx.ambient.rendering.components.SectionHeader
 import com.dx.ambient.rendering.components.isTvDevice
 import com.dx.ambient.rendering.components.rememberScreenPadding
 import com.dx.ambient.rendering.components.touchClickable
-import com.dx.ambient.youtube.YouTubeMode
 import com.dx.ambient.youtube.data.YouTubePlaylist
-
-// TODO(youtube): Remove this hardcoded demo playlist once OAuth sign-in is configured and the
-//  tab lists the signed-in user's real playlists (YouTubeViewModel.Playlists). Demo-only path so
-//  the IFrame player can be exercised without Google sign-in.
-private const val DEMO_PLAYLIST_URL =
-    "https://www.youtube.com/playlist?list=PLazDOSmamQaEGEwkFvuuh5jCrmjGfadOr"
 
 /**
  * The YouTube hub. Starts at a login wall ("sign in with your YouTube account") and, once
@@ -62,9 +55,6 @@ fun YouTubeTabScreen(
 ) {
     val viewModel: YouTubeViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    // TODO(youtube): demo only — replace with the user's real playlists after OAuth.
-    val demoPlaylistId = remember { YouTubeMode.extractPlaylistId(DEMO_PLAYLIST_URL) }
 
     // Launches the one-time OAuth consent screen when the Authorization API asks for it.
     val consentLauncher = rememberLauncherForActivityResult(
@@ -96,10 +86,7 @@ fun YouTubeTabScreen(
                     "YouTube sign-in isn't configured yet. Add your OAuth Web client ID in " +
                         "youtube_config.xml to enable it.",
                 )
-                YouTubeUiState.SignedOut -> SignInPrompt(
-                    onSignIn = viewModel::signIn,
-                    onPlayDemo = demoPlaylistId?.let { id -> { onPlayPlaylist(id) } },
-                )
+                YouTubeUiState.SignedOut -> SignInPrompt(onSignIn = viewModel::signIn)
                 YouTubeUiState.Loading -> CenteredMessage("Loading…")
                 is YouTubeUiState.Playlists -> {
                     if (s.items.isEmpty()) {
@@ -115,7 +102,7 @@ fun YouTubeTabScreen(
 }
 
 @Composable
-private fun SignInPrompt(onSignIn: () -> Unit, onPlayDemo: (() -> Unit)?) {
+private fun SignInPrompt(onSignIn: () -> Unit) {
     // On TV, give the primary action initial focus so a remote / D-pad has somewhere to land.
     val tvDevice = isTvDevice()
     val signInFocus = remember { FocusRequester() }
@@ -137,10 +124,6 @@ private fun SignInPrompt(onSignIn: () -> Unit, onPlayDemo: (() -> Unit)?) {
                 onClick = onSignIn,
                 modifier = Modifier.focusRequester(signInFocus),
             )
-            // TODO(youtube): demo-only entry — remove once real playlists load after sign-in.
-            if (onPlayDemo != null) {
-                PrimaryButton(text = "Play demo playlist", onClick = onPlayDemo)
-            }
         }
     }
 }
