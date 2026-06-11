@@ -15,7 +15,9 @@ import com.dx.ambient.data.database.entity.SceneEntity
         LibraryMediaEntity::class,
     ],
     version = 1,
-    exportSchema = false,
+    // Schema history is committed under core-data/schemas so future versions
+    // must ship an explicit Migration — user scenes are never wiped on upgrade.
+    exportSchema = true,
 )
 abstract class AmbientDatabase : RoomDatabase() {
     abstract fun sceneDao(): SceneDao

@@ -1,6 +1,7 @@
 package com.dx.ambient.data.mapper
 
 import com.dx.ambient.data.database.entity.LibraryMediaEntity
+import com.dx.ambient.data.database.entity.SceneEntity
 import com.dx.ambient.domain.model.LoopMode
 import com.dx.ambient.domain.model.Mask
 import com.dx.ambient.domain.model.MediaKind
@@ -8,6 +9,7 @@ import com.dx.ambient.domain.model.MediaSource
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class MapperTest {
@@ -56,6 +58,24 @@ class MapperTest {
         assertEquals(MediaKind.VIDEO, domain.kind)
         assertEquals("clip.mp4", domain.displayName)
         assertEquals(entity, domain.toEntity())
+    }
+
+    @Test
+    fun `corrupt scene payload maps to null instead of crashing`() {
+        val entity = SceneEntity(
+            id = "broken",
+            name = "Broken",
+            sortOrder = 0,
+            updatedAtEpochMs = 0,
+            payloadJson = "{ not valid json",
+        )
+        assertNull(entity.toDomainOrNull())
+    }
+
+    @Test
+    fun `valid scene payload maps via toDomainOrNull`() {
+        val scene = Scene(id = "ok", name = "Glow")
+        assertEquals(scene, scene.toEntity().toDomainOrNull())
     }
 
     @Test

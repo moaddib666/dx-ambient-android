@@ -1,7 +1,7 @@
 package com.dx.ambient.data.repository
 
 import com.dx.ambient.data.database.dao.SceneDao
-import com.dx.ambient.data.mapper.toDomain
+import com.dx.ambient.data.mapper.toDomainOrNull
 import com.dx.ambient.data.mapper.toEntity
 import com.dx.ambient.data.util.TimeProvider
 import com.dx.ambient.domain.model.Scene
@@ -17,9 +17,9 @@ class SceneRepositoryImpl @Inject constructor(
 ) : SceneRepository {
 
     override fun observeScenes(): Flow<List<Scene>> =
-        sceneDao.observeAll().map { rows -> rows.map { it.toDomain() } }
+        sceneDao.observeAll().map { rows -> rows.mapNotNull { it.toDomainOrNull() } }
 
-    override suspend fun getScene(id: String): Scene? = sceneDao.getById(id)?.toDomain()
+    override suspend fun getScene(id: String): Scene? = sceneDao.getById(id)?.toDomainOrNull()
 
     override suspend fun upsertScene(scene: Scene): Scene {
         val now = time.nowEpochMs()
@@ -35,7 +35,7 @@ class SceneRepositoryImpl @Inject constructor(
     override suspend fun deleteScene(id: String) = sceneDao.delete(id)
 
     override suspend fun duplicateScene(id: String): Scene? {
-        val original = sceneDao.getById(id)?.toDomain() ?: return null
+        val original = sceneDao.getById(id)?.toDomainOrNull() ?: return null
         val copy = original.copy(
             id = UUID.randomUUID().toString(),
             name = "${original.name} (copy)",

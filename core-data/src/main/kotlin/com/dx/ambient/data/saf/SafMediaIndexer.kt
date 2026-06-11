@@ -4,6 +4,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.util.Log
 import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.MediaKind
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -32,7 +33,7 @@ class SafMediaIndexer @Inject constructor(
                 treeUri,
                 android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
             )
-        }
+        }.onFailure { Log.w(TAG, "Couldn't persist read permission for $treeUri", it) }
     }
 
     fun releasePermission(treeUri: Uri) {
@@ -41,8 +42,12 @@ class SafMediaIndexer @Inject constructor(
                 treeUri,
                 android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
             )
-        }
+        }.onFailure { Log.w(TAG, "Couldn't release read permission for $treeUri", it) }
     }
+
+    /** True while the persisted read grant for [treeUri] is still valid (not revoked). */
+    fun hasPersistedPermission(treeUri: Uri): Boolean =
+        resolver.persistedUriPermissions.any { it.uri == treeUri && it.isReadPermission }
 
     /** Reads a display name for the tree itself (folder name shown to the user). */
     suspend fun readTreeName(treeUri: Uri): String = withContext(Dispatchers.IO) {
@@ -115,5 +120,9 @@ class SafMediaIndexer @Inject constructor(
         startsWith("audio/") -> MediaKind.AUDIO
         startsWith("image/") -> MediaKind.IMAGE
         else -> null
+    }
+
+    private companion object {
+        const val TAG = "SafMediaIndexer"
     }
 }

@@ -28,6 +28,12 @@ android {
     }
 }
 
+// Room writes a JSON snapshot of every schema version here; the directory is
+// committed so migrations can be written and tested against real history.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(project(":core-domain"))
 

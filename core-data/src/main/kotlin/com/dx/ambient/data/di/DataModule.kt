@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.dx.ambient.data.database.AmbientDatabase
+import com.dx.ambient.data.database.AmbientDatabaseMigrations
 import com.dx.ambient.data.database.dao.MediaDao
 import com.dx.ambient.data.database.dao.SceneDao
 import com.dx.ambient.data.device.AndroidDeviceCapabilityProvider
@@ -38,7 +39,7 @@ object DataProvidesModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AmbientDatabase =
         Room.databaseBuilder(context, AmbientDatabase::class.java, AmbientDatabase.NAME)
-            .fallbackToDestructiveMigration()
+            .addMigrations(*AmbientDatabaseMigrations.ALL)
             .build()
 
     @Provides

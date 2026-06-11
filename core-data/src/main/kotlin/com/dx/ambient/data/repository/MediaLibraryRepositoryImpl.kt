@@ -1,6 +1,7 @@
 package com.dx.ambient.data.repository
 
 import android.net.Uri
+import android.util.Log
 import com.dx.ambient.data.database.dao.MediaDao
 import com.dx.ambient.data.mapper.toDomain
 import com.dx.ambient.data.mapper.toEntity
@@ -33,6 +34,9 @@ class MediaLibraryRepositoryImpl @Inject constructor(
     override suspend fun importFolder(treeUri: String): ImportedFolder {
         val uri = Uri.parse(treeUri)
         indexer.persistPermission(uri)
+        check(indexer.hasPersistedPermission(uri)) {
+            "Read access to the folder was not granted"
+        }
         val folder = ImportedFolder(
             treeUri = treeUri,
             displayName = indexer.readTreeName(uri),
@@ -51,12 +55,24 @@ class MediaLibraryRepositoryImpl @Inject constructor(
 
     override suspend fun refresh() {
         val folders = mediaDao.observeFolders().first()
-        folders.forEach { reindex(it.treeUri) }
+        folders.forEach { folder ->
+            // A revoked grant (user action, USB unplugged) must not abort the whole
+            // refresh — keep the stale index so media reappears when access returns.
+            if (indexer.hasPersistedPermission(Uri.parse(folder.treeUri))) {
+                reindex(folder.treeUri)
+            } else {
+                Log.w(TAG, "Skipping refresh of ${folder.treeUri}: read permission revoked")
+            }
+        }
     }
 
     private suspend fun reindex(treeUri: String) {
         val media = indexer.index(Uri.parse(treeUri))
         mediaDao.deleteMediaForTree(treeUri)
         mediaDao.upsertMedia(media.map { it.toEntity() })
+    }
+
+    private companion object {
+        const val TAG = "MediaLibraryRepository"
     }
 }
