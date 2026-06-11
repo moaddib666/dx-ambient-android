@@ -36,8 +36,10 @@ import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
 import com.dx.ambient.rendering.components.PrimaryButton
-import com.dx.ambient.rendering.components.ScreenPadding
 import com.dx.ambient.rendering.components.SectionHeader
+import com.dx.ambient.rendering.components.isTvDevice
+import com.dx.ambient.rendering.components.rememberScreenPadding
+import com.dx.ambient.rendering.components.touchClickable
 
 /**
  * Scene authoring screen (MVP features 4 + 7).
@@ -64,17 +66,21 @@ fun SceneEditorScreen(
         viewModel.bind(sceneId)
     }
 
-    // Land initial focus on Save (not the name field) so the soft keyboard never auto-pops on
-    // entry; the user navigates up to a field and only then taps to type.
+    // On TV, land initial focus on Save (not the name field) so the soft keyboard never
+    // auto-pops on entry; the user navigates up to a field and only then taps to type.
+    // On touch devices no focus is requested.
+    val tvDevice = isTvDevice()
     val saveFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { saveFocus.requestFocus() } }
+    LaunchedEffect(tvDevice) {
+        if (tvDevice) runCatching { saveFocus.requestFocus() }
+    }
 
     BackHandler { onDone() }
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(ScreenPadding),
+            .padding(rememberScreenPadding()),
     ) {
         // Scrollable form content. Keeping this in a scroll container guarantees every field is
         // reachable on any screen size; the Save/Cancel bar below stays pinned and always visible.
@@ -236,7 +242,7 @@ private fun MediaPickerRow(
 
 @Composable
 private fun MediaChip(text: String, selected: Boolean, onClick: () -> Unit) {
-    Card(onClick = onClick) {
+    Card(onClick = onClick, modifier = Modifier.touchClickable(onClick = onClick)) {
         Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
                 text = if (selected) "✓ $text" else text,

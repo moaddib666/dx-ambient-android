@@ -19,8 +19,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.dx.ambient.domain.model.DeviceCapabilities
 import com.dx.ambient.rendering.components.EmptyState
-import com.dx.ambient.rendering.components.ScreenPadding
 import com.dx.ambient.rendering.components.SectionHeader
+import com.dx.ambient.rendering.components.rememberScreenPadding
 
 /**
  * Device capability diagnostics screen (MVP feature 10).
@@ -54,7 +54,7 @@ fun DeviceInfoScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(ScreenPadding),
+            .padding(rememberScreenPadding()),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {

@@ -36,8 +36,10 @@ import coil.compose.AsyncImage
 import androidx.compose.runtime.remember
 import com.dx.ambient.rendering.components.AmbientScreen
 import com.dx.ambient.rendering.components.PrimaryButton
-import com.dx.ambient.rendering.components.ScreenPadding
 import com.dx.ambient.rendering.components.SectionHeader
+import com.dx.ambient.rendering.components.isTvDevice
+import com.dx.ambient.rendering.components.rememberScreenPadding
+import com.dx.ambient.rendering.components.touchClickable
 import com.dx.ambient.youtube.YouTubeMode
 import com.dx.ambient.youtube.data.YouTubePlaylist
 
@@ -83,7 +85,7 @@ fun YouTubeTabScreen(
     BackHandler { onBack() }
 
     AmbientScreen(modifier = modifier) {
-        Column(modifier = Modifier.fillMaxSize().padding(ScreenPadding)) {
+        Column(modifier = Modifier.fillMaxSize().padding(rememberScreenPadding())) {
             SectionHeader(title = "YouTube", subtitle = "Play your YouTube playlists")
 
             when (val s = state) {
@@ -114,9 +116,12 @@ fun YouTubeTabScreen(
 
 @Composable
 private fun SignInPrompt(onSignIn: () -> Unit, onPlayDemo: (() -> Unit)?) {
-    // Give the primary action initial focus so a TV remote / D-pad has somewhere to land.
+    // On TV, give the primary action initial focus so a remote / D-pad has somewhere to land.
+    val tvDevice = isTvDevice()
     val signInFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { signInFocus.requestFocus() } }
+    LaunchedEffect(tvDevice) {
+        if (tvDevice) runCatching { signInFocus.requestFocus() }
+    }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
@@ -182,7 +187,9 @@ private fun PlaylistGrid(playlists: List<YouTubePlaylist>, onPlay: (String) -> U
 private fun PlaylistCard(playlist: YouTubePlaylist, onClick: () -> Unit) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .touchClickable(onClick = onClick),
         colors = CardDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.06f),
             focusedContainerColor = Color.White.copy(alpha = 0.14f),

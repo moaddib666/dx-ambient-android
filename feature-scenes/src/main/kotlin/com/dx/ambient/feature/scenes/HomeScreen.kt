@@ -46,7 +46,9 @@ import com.dx.ambient.rendering.components.AmbientScreen
 import com.dx.ambient.rendering.components.CircleIconButton
 import com.dx.ambient.rendering.components.EmptyState
 import com.dx.ambient.rendering.components.PrimaryButton
-import com.dx.ambient.rendering.components.ScreenPadding
+import com.dx.ambient.rendering.components.isTvDevice
+import com.dx.ambient.rendering.components.rememberScreenPadding
+import com.dx.ambient.rendering.components.touchClickable
 
 /** Neon cyan used for the focused-card outline and glow. */
 private val NeonCyan = Color(0xFF00E5FF)
@@ -72,15 +74,19 @@ fun HomeScreen(
     val viewModel: HomeViewModel = hiltViewModel()
     val scenes by viewModel.state.collectAsStateWithLifecycle()
 
-    // Give the first action initial focus so a D-pad/remote has somewhere to land on launch.
+    // On TV, give the first action initial focus so a D-pad/remote has somewhere to land on
+    // launch. On touch devices no focus is requested — the user just taps.
+    val tvDevice = isTvDevice()
     val firstActionFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { firstActionFocus.requestFocus() } }
+    LaunchedEffect(tvDevice) {
+        if (tvDevice) runCatching { firstActionFocus.requestFocus() }
+    }
 
     AmbientScreen(modifier = modifier) {
       Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(ScreenPadding),
+            .padding(rememberScreenPadding()),
       ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -153,7 +159,11 @@ private fun SceneCard(
     Card(
         onClick = onPlay,
         onLongClick = { showActions = true },
-        modifier = modifier.fillMaxWidth(),
+        // Touch/mouse bridge: tv-material Card only reacts to D-pad ENTER, so taps and
+        // long-presses are wired up explicitly for phones/tablets.
+        modifier = modifier
+            .fillMaxWidth()
+            .touchClickable(onClick = onPlay, onLongClick = { showActions = true }),
         shape = CardDefaults.shape(shape),
         // Semi-transparent "glass" that brightens on focus.
         colors = CardDefaults.colors(

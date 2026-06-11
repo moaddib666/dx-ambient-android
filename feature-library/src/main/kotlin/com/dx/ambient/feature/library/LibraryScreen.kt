@@ -43,8 +43,8 @@ import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.MediaKind
 import com.dx.ambient.rendering.components.EmptyState
 import com.dx.ambient.rendering.components.IconTextButton
-import com.dx.ambient.rendering.components.ScreenPadding
 import com.dx.ambient.rendering.components.SectionHeader
+import com.dx.ambient.rendering.components.rememberScreenPadding
 
 /**
  * Media Library screen (MVP feature 6).
@@ -75,7 +75,7 @@ fun LibraryScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(ScreenPadding),
+            .padding(rememberScreenPadding()),
     ) {
         SectionHeader(
             title = "Media Library",

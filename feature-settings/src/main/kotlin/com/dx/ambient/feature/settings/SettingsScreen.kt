@@ -16,13 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.tv.material3.Button
 import androidx.tv.material3.Card
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.dx.ambient.domain.model.ProjectorSettings
-import com.dx.ambient.rendering.components.ScreenPadding
+import com.dx.ambient.rendering.components.PrimaryButton
 import com.dx.ambient.rendering.components.SectionHeader
+import com.dx.ambient.rendering.components.rememberScreenPadding
+import com.dx.ambient.rendering.components.touchClickable
 
 /**
  * Global projector settings screen (MVP features 8 & 9).
@@ -48,7 +49,7 @@ fun SettingsScreen(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(ScreenPadding),
+            .padding(rememberScreenPadding()),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
@@ -140,7 +141,12 @@ fun SettingsScreen(
         item {
             // Single clickable (the Card) — no nested focusable ListItem, so the D-pad lands on
             // exactly one focus target for this row.
-            Card(onClick = onOpenDeviceInfo, modifier = Modifier.fillMaxWidth()) {
+            Card(
+                onClick = onOpenDeviceInfo,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .touchClickable(onClick = onOpenDeviceInfo),
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -168,7 +174,12 @@ private fun ToggleRow(
     value: Boolean,
     onToggle: (Boolean) -> Unit,
 ) {
-    Card(onClick = { onToggle(!value) }, modifier = Modifier.fillMaxWidth()) {
+    Card(
+        onClick = { onToggle(!value) },
+        modifier = Modifier
+            .fillMaxWidth()
+            .touchClickable(onClick = { onToggle(!value) }),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -214,13 +225,13 @@ private fun StepperRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Button(onClick = onDecrease) { Text("-") }
+                PrimaryButton(text = "-", onClick = onDecrease)
                 Text(
                     text = valueText,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.width(96.dp),
                 )
-                Button(onClick = onIncrease) { Text("+") }
+                PrimaryButton(text = "+", onClick = onIncrease)
             }
         }
     }

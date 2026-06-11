@@ -3,6 +3,8 @@ package com.dx.ambient.feature.scenes
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -23,6 +25,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -95,6 +98,29 @@ fun PlayerScreen(
                     }
                     else -> false
                 }
+            }
+            // Touch/mouse mirror of the remote controls: tap toggles play/pause,
+            // a horizontal swipe switches to the previous/next scene.
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = {
+                        viewModel.togglePlay()
+                        overlayVisible = true
+                    },
+                )
+            }
+            .pointerInput(Unit) {
+                var dragTotal = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { dragTotal = 0f },
+                    onDragEnd = {
+                        val threshold = 96.dp.toPx()
+                        when {
+                            dragTotal <= -threshold -> viewModel.next()
+                            dragTotal >= threshold -> viewModel.previous()
+                        }
+                    },
+                ) { _, dragAmount -> dragTotal += dragAmount }
             },
     ) {
         if (scene != null) {

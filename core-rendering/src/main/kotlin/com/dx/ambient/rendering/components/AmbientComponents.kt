@@ -22,7 +22,10 @@ import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 
-/** Standard TV overscan-safe content padding. */
+/**
+ * Standard TV overscan-safe content padding. Prefer [rememberScreenPadding], which adapts to
+ * the device class (TV overscan vs phone/tablet margins).
+ */
 val ScreenPadding = PaddingValues(horizontal = 48.dp, vertical = 32.dp)
 
 @Composable
@@ -64,7 +67,7 @@ fun PrimaryButton(
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick, enabled = enabled),
         colors = ambientButtonColors(),
         scale = ButtonDefaults.scale(focusedScale = 1.1f),
     ) {
@@ -87,7 +90,7 @@ fun CircleIconButton(
     Button(
         onClick = onClick,
         // Same height as the text pills so the row aligns, same glass colors + focus scale.
-        modifier = modifier.size(diameter),
+        modifier = modifier.size(diameter).touchClickable(onClick = onClick),
         colors = ambientButtonColors(),
         scale = ButtonDefaults.scale(focusedScale = 1.1f),
         shape = ButtonDefaults.shape(shape = CircleShape),
@@ -110,7 +113,7 @@ fun IconTextButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick),
         colors = ambientButtonColors(),
         scale = ButtonDefaults.scale(focusedScale = 1.1f),
     ) {
