@@ -34,6 +34,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,8 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
@@ -98,6 +101,14 @@ fun YouTubeIFrameScreen(
     modifier: Modifier = Modifier,
     /** Optional alpha mask composited over the player (ambient framing, non-interactive). */
     maskUri: String? = null,
+    /** Output brightness multiplier 0f..1f — rendered as a black scrim like scene playback. */
+    brightness: Float = 1f,
+    /** Video layer opacity 0f..1f, independent of [brightness] (the mask stays fully lit). */
+    videoAlpha: Float = 1f,
+    /** Video layer scale factor (1f = fit screen). */
+    videoScale: Float = 1f,
+    /** Mute the embedded player (e.g. a separate scene soundtrack plays instead). */
+    muted: Boolean = false,
 ) {
     // No source configured (e.g. the host hasn't wired a picker yet): show a calm placeholder
     // instead of an empty player, while still honoring BACK.
@@ -133,8 +144,8 @@ fun YouTubeIFrameScreen(
 
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val html = remember(videoId, playlistId, resolvedVideoIds) {
-        buildPlayerHtml(videoId, playlistId, resolvedVideoIds)
+    val html = remember(videoId, playlistId, resolvedVideoIds, muted) {
+        buildPlayerHtml(videoId, playlistId, resolvedVideoIds, muted)
     }
 
     // Holds the live WebView so the lifecycle observer / onDispose teardown can
@@ -158,16 +169,32 @@ fun YouTubeIFrameScreen(
                 .focusRequester(focusRequester)
                 .focusable()
                 .onKeyEvent { event ->
-                    if (event.type == KeyEventType.KeyUp && event.key == Key.Back) {
-                        onExit()
-                        true
-                    } else {
-                        false
+                    if (event.type != KeyEventType.KeyUp) return@onKeyEvent false
+                    when (event.key) {
+                        Key.Back -> {
+                            onExit()
+                            true
+                        }
+                        // Center/enter toggles play/pause, mirroring scene playback —
+                        // the YouTube UI itself is never interactive in ambient mode.
+                        Key.DirectionCenter, Key.Enter -> {
+                            webViewHolder.value?.evaluateJavascript(TOGGLE_JS, null)
+                            true
+                        }
+                        else -> false
                     }
                 },
     ) {
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                // Per-scene video transform: opacity + scale apply to the player only;
+                // the mask and scrim layers above stay untouched.
+                .graphicsLayer {
+                    alpha = videoAlpha.coerceIn(0f, 1f)
+                    scaleX = videoScale
+                    scaleY = videoScale
+                },
             factory = { context ->
                 WebView(context).apply {
                     webViewHolder.value = this
@@ -237,14 +264,35 @@ fun YouTubeIFrameScreen(
             update = { /* No reactive updates: html is keyed via remember(). */ },
         )
 
-        // Ambient alpha mask over the player. Purely decorative and not interactive —
-        // it draws no pointer handlers, so taps still reach the player beneath it.
+        // Immersive ambient mode: this transparent layer swallows every touch before it
+        // reaches the WebView, so YouTube's own UI can never appear over the mask. A tap
+        // toggles play/pause exactly like scene playback.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { webViewHolder.value?.evaluateJavascript(TOGGLE_JS, null) },
+                    )
+                },
+        )
+
+        // Ambient alpha mask over the player. Purely decorative and not interactive.
         if (!maskUri.isNullOrBlank()) {
             coil.compose.AsyncImage(
                 model = maskUri,
                 contentDescription = null,
                 contentScale = androidx.compose.ui.layout.ContentScale.FillBounds,
                 modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        // Brightness / dim scrim, same as scene playback. brightness == 1f draws nothing.
+        if (brightness < 1f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = (1f - brightness).coerceIn(0f, 1f))),
             )
         }
 
@@ -323,6 +371,7 @@ private fun buildPlayerHtml(
     videoId: String?,
     playlistId: String?,
     resolvedVideoIds: List<String>? = null,
+    muted: Boolean = false,
 ): String {
     val safeVideoId = (videoId ?: "").escapeForJs()
     val safePlaylistId = (playlistId ?: "").escapeForJs()
@@ -339,20 +388,28 @@ private fun buildPlayerHtml(
     // Playlist takes precedence when present; resolved ids beat the bare embed.
     // Ambient use: playlists restart from the top when they finish ('loop': 1 /
     // setLoop below), so a playlist can serve as an endless video loop.
+    // Ambient/immersive mode: the player chrome is fully hidden (controls 0, no keyboard,
+    // no fullscreen button, no annotations) — playback control happens natively.
     val playerVarsBody =
         if (idsJsArray == null && !playlistId.isNullOrEmpty()) {
             """
             'listType': 'playlist',
             'list': '$safePlaylistId',
             'loop': 1,
-            'controls': 1,
+            'controls': 0,
+            'disablekb': 1,
+            'fs': 0,
+            'iv_load_policy': 3,
             'rel': 0,
             'modestbranding': 1,
             'playsinline': 1
             """.trimIndent()
         } else {
             """
-            'controls': 1,
+            'controls': 0,
+            'disablekb': 1,
+            'fs': 0,
+            'iv_load_policy': 3,
             'rel': 0,
             'modestbranding': 1,
             'playsinline': 1
@@ -368,11 +425,12 @@ private fun buildPlayerHtml(
         }
 
     // Array playlists start via loadPlaylist; everything else autoplay-starts directly.
+    val muteCall = if (muted) "e.target.mute(); " else ""
     val onReadyBody =
         if (idsJsArray != null) {
-            "e.target.loadPlaylist([$idsJsArray]); e.target.setLoop(true);"
+            "${muteCall}e.target.loadPlaylist([$idsJsArray]); e.target.setLoop(true);"
         } else {
-            "e.target.playVideo();"
+            "${muteCall}e.target.playVideo();"
         }
 
     return """
@@ -391,11 +449,14 @@ private fun buildPlayerHtml(
                 background: #000;
                 overflow: hidden;
               }
-              /* IFrame fills the screen — always >= 200x200 px. */
+              /* IFrame fills the screen — always >= 200x200 px. Pointer events are
+                 disabled so the embed UI can never be opened in ambient mode; all
+                 control happens through the native overlay (tap/center = play-pause). */
               #player, iframe {
                 width: 100% !important;
                 height: 100% !important;
                 border: 0;
+                pointer-events: none;
               }
             </style>
           </head>
@@ -489,6 +550,12 @@ private const val EMBED_ORIGIN = "https://www.youtube-nocookie.com"
 private const val PAUSE_JS =
     "if (window.player && typeof window.player.pauseVideo === 'function') " +
         "{ window.player.pauseVideo(); }"
+
+/** JS evaluated on tap / remote-center: toggles play (1) ↔ pause, like scene playback. */
+private const val TOGGLE_JS =
+    "if (window.player && typeof window.player.getPlayerState === 'function') {" +
+        " if (window.player.getPlayerState() === 1) { window.player.pauseVideo(); }" +
+        " else { window.player.playVideo(); } }"
 
 /** Minimal escaping for values interpolated into single-quoted JS strings. */
 private fun String.escapeForJs(): String =
