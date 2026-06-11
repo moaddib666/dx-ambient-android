@@ -130,4 +130,23 @@
     <string name="yt_blocked_title">このプレイリストは、ここの埋め込みプレーヤーでは再生できません。</string>
     <string name="yt_blocked_body">YouTube は、エミュレーターや未認証デバイスでの埋め込み再生、および所有者が埋め込みを無効にした動画をブロックします。Play 認証済みデバイスか、埋め込み可能な動画のプレイリストをお試しください。</string>
     <string name="yt_mask_for">%1$s のマスク</string>
+
+    <string name="yt_signed_in_as">%1$s としてログイン中</string>
+    <string name="yt_signed_in">ログイン中</string>
+    <string name="yt_switch_account">アカウントを切り替える</string>
+    <string name="editor_video_link">動画リンク</string>
+    <string name="editor_video_link_hint">YouTube の動画/再生リストのリンク、または動画ストリームの直接 URL を貼り付けてください</string>
+    <string name="editor_link_apply">リンクを使用</string>
+    <string name="editor_link_invalid">リンクを認識できません。YouTube のリンクまたは http(s) の直接 URL を使用してください</string>
+    <string name="editor_my_playlists">マイ YouTube 再生リスト</string>
+    <string name="editor_builtin_playlists">内蔵再生リスト</string>
+    <string name="editor_audio_stream">音声ストリーム URL</string>
+    <string name="editor_video_opacity">動画の不透明度</string>
+    <string name="editor_video_scale">動画の拡大率</string>
+    <string name="library_import_unsupported">このデバイスにはフォルダー選択機能がないため、フォルダーのインポートは利用できません。</string>
+    <string name="home_move_left">左へ移動</string>
+    <string name="home_move_right">右へ移動</string>
+    <string name="home_hide">非表示にする</string>
+    <string name="home_show">表示する</string>
+    <string name="home_hidden_badge">非表示</string>
 </resources>

@@ -131,4 +131,23 @@
     <string name="yt_blocked_title">Cette playlist ne peut pas être lue ici dans le lecteur intégré.</string>
     <string name="yt_blocked_body">YouTube bloque la lecture intégrée sur les émulateurs et les appareils non certifiés, ainsi que pour les vidéos dont les propriétaires ont désactivé l\'intégration. Essayez un appareil certifié Play ou une playlist de vidéos intégrables.</string>
     <string name="yt_mask_for">Masque pour %1$s</string>
+
+    <string name="yt_signed_in_as">Connecté en tant que %1$s</string>
+    <string name="yt_signed_in">Connecté</string>
+    <string name="yt_switch_account">Changer de compte</string>
+    <string name="editor_video_link">Lien vidéo</string>
+    <string name="editor_video_link_hint">Collez un lien de vidéo ou de playlist YouTube, ou une URL directe de flux vidéo</string>
+    <string name="editor_link_apply">Utiliser le lien</string>
+    <string name="editor_link_invalid">Lien non reconnu — utilisez un lien YouTube ou une URL http(s) directe</string>
+    <string name="editor_my_playlists">Mes playlists YouTube</string>
+    <string name="editor_builtin_playlists">Playlists intégrées</string>
+    <string name="editor_audio_stream">URL du flux audio</string>
+    <string name="editor_video_opacity">Opacité de la vidéo</string>
+    <string name="editor_video_scale">Échelle de la vidéo</string>
+    <string name="library_import_unsupported">Cet appareil n\'a pas de sélecteur de dossiers — l\'importation de dossiers n\'est pas disponible.</string>
+    <string name="home_move_left">Déplacer à gauche</string>
+    <string name="home_move_right">Déplacer à droite</string>
+    <string name="home_hide">Masquer</string>
+    <string name="home_show">Afficher</string>
+    <string name="home_hidden_badge">Masquée</string>
 </resources>

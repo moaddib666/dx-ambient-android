@@ -131,4 +131,23 @@
     <string name="yt_blocked_title">Esta lista no puede reproducirse aquí en el reproductor integrado.</string>
     <string name="yt_blocked_body">YouTube bloquea la reproducción integrada en emuladores y dispositivos no certificados, y en vídeos cuyos propietarios desactivaron la inserción. Prueba con un dispositivo certificado por Play o una lista de vídeos insertables.</string>
     <string name="yt_mask_for">Máscara para %1$s</string>
+
+    <string name="yt_signed_in_as">Sesión iniciada como %1$s</string>
+    <string name="yt_signed_in">Sesión iniciada</string>
+    <string name="yt_switch_account">Cambiar de cuenta</string>
+    <string name="editor_video_link">Enlace de vídeo</string>
+    <string name="editor_video_link_hint">Pega un enlace de vídeo o lista de reproducción de YouTube, o una URL directa de transmisión de vídeo</string>
+    <string name="editor_link_apply">Usar enlace</string>
+    <string name="editor_link_invalid">Enlace no reconocido: usa un enlace de YouTube o una URL http(s) directa</string>
+    <string name="editor_my_playlists">Mis listas de YouTube</string>
+    <string name="editor_builtin_playlists">Listas integradas</string>
+    <string name="editor_audio_stream">URL de transmisión de audio</string>
+    <string name="editor_video_opacity">Opacidad del vídeo</string>
+    <string name="editor_video_scale">Escala del vídeo</string>
+    <string name="library_import_unsupported">Este dispositivo no tiene selector de carpetas: la importación de carpetas no está disponible.</string>
+    <string name="home_move_left">Mover a la izquierda</string>
+    <string name="home_move_right">Mover a la derecha</string>
+    <string name="home_hide">Ocultar</string>
+    <string name="home_show">Mostrar</string>
+    <string name="home_hidden_badge">Oculta</string>
 </resources>

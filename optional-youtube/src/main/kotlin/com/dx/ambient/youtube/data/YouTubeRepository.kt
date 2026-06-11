@@ -61,6 +61,26 @@ class YouTubeRepository @Inject constructor() {
         ids.take(maxVideos)
     }
 
+    /**
+     * Fetches the signed-in user's own channel (title + avatar) — the identity shown
+     * in the YouTube tab header. Returns null when the account has no channel.
+     */
+    suspend fun fetchMyChannel(accessToken: String): YouTubeChannel? =
+        withContext(Dispatchers.IO) {
+            val body = getJson(
+                "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",
+                accessToken,
+            )
+            AmbientYouTubeJson.decodeFromString(ChannelListResponse.serializer(), body)
+                .items.firstOrNull()
+                ?.let { item ->
+                    YouTubeChannel(
+                        title = item.snippet?.title.orEmpty(),
+                        thumbnailUrl = item.snippet?.thumbnails?.bestUrl(),
+                    )
+                }
+        }
+
     private fun getJson(urlString: String, accessToken: String): String {
         val conn = (URL(urlString).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
@@ -73,7 +93,7 @@ class YouTubeRepository @Inject constructor() {
             val code = conn.responseCode
             if (code !in 200..299) {
                 val err = conn.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
-                throw IOException("YouTube API HTTP $code: ${err.take(300)}")
+                throw YouTubeHttpException(code, "YouTube API HTTP $code: ${err.take(300)}")
             }
             return conn.inputStream.bufferedReader().use { it.readText() }
         } finally {
@@ -81,6 +101,12 @@ class YouTubeRepository @Inject constructor() {
         }
     }
 }
+
+/** Data API failure carrying the HTTP status, so auth can react to 401 (stale token). */
+class YouTubeHttpException(val code: Int, message: String) : IOException(message)
+
+/** The signed-in user's channel identity, shown in the YouTube tab header. */
+data class YouTubeChannel(val title: String, val thumbnailUrl: String?)
 
 internal val AmbientYouTubeJson = Json { ignoreUnknownKeys = true }
 
@@ -127,6 +153,12 @@ private data class Thumb(val url: String = "")
 
 @Serializable
 private data class ContentDetails(@SerialName("itemCount") val itemCount: Int = 0)
+
+@Serializable
+private data class ChannelListResponse(val items: List<ChannelItem> = emptyList())
+
+@Serializable
+private data class ChannelItem(val snippet: Snippet? = null)
 
 @Serializable
 internal data class PlaylistItemsResponse(

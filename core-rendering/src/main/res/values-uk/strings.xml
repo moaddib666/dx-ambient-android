@@ -133,4 +133,23 @@
     <string name="yt_blocked_title">Цей плейлист не відтворюється у вбудованому плеєрі тут.</string>
     <string name="yt_blocked_body">YouTube блокує вбудоване відтворення на емуляторах і несертифікованих пристроях, а також для відео, власники яких заборонили вбудовування. Спробуйте Play-сертифікований пристрій або плейлист із відео, доступними для вбудовування.</string>
     <string name="yt_mask_for">Маска для %1$s</string>
+
+    <string name="yt_signed_in_as">Ви ввійшли як %1$s</string>
+    <string name="yt_signed_in">Ви ввійшли</string>
+    <string name="yt_switch_account">Змінити обліковий запис</string>
+    <string name="editor_video_link">Посилання на відео</string>
+    <string name="editor_video_link_hint">Вставте посилання на відео чи плейліст YouTube або пряму URL-адресу відеопотоку</string>
+    <string name="editor_link_apply">Використати посилання</string>
+    <string name="editor_link_invalid">Посилання не розпізнано — використайте посилання YouTube або пряму URL-адресу http(s)-потоку</string>
+    <string name="editor_my_playlists">Мої плейлісти YouTube</string>
+    <string name="editor_builtin_playlists">Вбудовані плейлісти</string>
+    <string name="editor_audio_stream">URL-адреса аудіопотоку</string>
+    <string name="editor_video_opacity">Непрозорість відео</string>
+    <string name="editor_video_scale">Масштаб відео</string>
+    <string name="library_import_unsupported">На цьому пристрої немає засобу вибору тек — імпорт тек недоступний.</string>
+    <string name="home_move_left">Перемістити ліворуч</string>
+    <string name="home_move_right">Перемістити праворуч</string>
+    <string name="home_hide">Сховати</string>
+    <string name="home_show">Показати</string>
+    <string name="home_hidden_badge">Сховано</string>
 </resources>

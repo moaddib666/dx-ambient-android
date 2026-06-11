@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dx.ambient.youtube.auth.YouTubeAuthClient
-import com.dx.ambient.youtube.auth.YouTubeAuthClient.AuthOutcome
 import com.dx.ambient.youtube.data.YouTubeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,13 +42,11 @@ class YouTubePlayerViewModel @Inject constructor(
     fun resolve(playlistId: String) {
         if (_resolution.value !is Resolution.Resolving) return
         viewModelScope.launch {
+            // withFreshToken retries once on HTTP 401 (stale cached token) before giving up.
             val ids = runCatching {
-                when (val outcome = auth.authorize()) {
-                    is AuthOutcome.Token ->
-                        repository.fetchPlaylistVideoIds(outcome.accessToken, playlistId)
-                            .takeIf { it.isNotEmpty() }
-                    else -> null
-                }
+                auth.withFreshToken { token ->
+                    repository.fetchPlaylistVideoIds(token, playlistId)
+                }?.takeIf { it.isNotEmpty() }
             }.onFailure {
                 Log.w(TAG, "Couldn't resolve playlist $playlistId via Data API; falling back to embed", it)
             }.getOrNull()

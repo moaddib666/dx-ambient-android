@@ -1,5 +1,6 @@
 package com.dx.ambient.youtube.ui
 
+import android.accounts.AccountManager
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -22,12 +23,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
@@ -50,7 +51,6 @@ import com.dx.ambient.rendering.components.isTvDevice
 import com.dx.ambient.rendering.components.rememberScreenPadding
 import com.dx.ambient.rendering.components.touchClickable
 import com.dx.ambient.youtube.data.YouTubePlaylist
-import com.dx.ambient.youtube.featured.FeaturedPlaylist
 
 /**
  * The YouTube hub. Starts at a login wall ("sign in with your YouTube account") and, once
@@ -66,6 +66,8 @@ fun YouTubeTabScreen(
 ) {
     val viewModel: YouTubeViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Featured playlists live on the Home screen only; the tab keeps just the
+    // long-press feature/unfeature toggle on the account grid.
     val featuredViewModel: YouTubeFeaturedViewModel = hiltViewModel()
     val featuredState by featuredViewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(state) { featuredViewModel.refresh() }
@@ -86,6 +88,19 @@ fun YouTubeTabScreen(
         }
     }
 
+    // System Google account chooser for "Switch account".
+    val accountPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val email = result.data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+        if (result.resultCode == Activity.RESULT_OK) viewModel.onAccountChosen(email)
+    }
+    LaunchedEffect(Unit) {
+        viewModel.accountPickerRequests.collect { intent ->
+            runCatching { accountPickerLauncher.launch(intent) }
+        }
+    }
+
     BackHandler { onBack() }
 
     AmbientScreen(modifier = modifier) {
@@ -94,30 +109,6 @@ fun YouTubeTabScreen(
                 title = stringResource(R.string.youtube_label),
                 subtitle = stringResource(R.string.yt_subtitle),
             )
-
-            // Long-press a featured card to choose its mask.
-            var maskPickerFor by remember {
-                androidx.compose.runtime.mutableStateOf<FeaturedPlaylist?>(null)
-            }
-
-            FeaturedRail(
-                state = featuredState,
-                onPlay = { item -> onPlayPlaylist(item.playlistId, item.maskUri) },
-                onPickMask = { maskPickerFor = it },
-            )
-
-            maskPickerFor?.let { target ->
-                MaskPickerDialog(
-                    title = target.title,
-                    masks = featuredViewModel.bundledMasks(),
-                    selectedUri = target.maskUri,
-                    onSelect = { uri ->
-                        featuredViewModel.setMask(target.playlistId, uri)
-                        maskPickerFor = null
-                    },
-                    onDismiss = { maskPickerFor = null },
-                )
-            }
 
             when (val s = state) {
                 YouTubeUiState.Unsupported -> CenteredMessage(
@@ -129,6 +120,7 @@ fun YouTubeTabScreen(
                 YouTubeUiState.SignedOut -> SignInPrompt(onSignIn = viewModel::signIn)
                 YouTubeUiState.Loading -> CenteredMessage(stringResource(R.string.common_loading))
                 is YouTubeUiState.Playlists -> {
+                    AccountHeader(state = s, onSwitchAccount = viewModel::switchAccount)
                     if (s.items.isEmpty()) {
                         CenteredMessage(stringResource(R.string.yt_no_playlists))
                     } else {
@@ -143,6 +135,49 @@ fun YouTubeTabScreen(
                 is YouTubeUiState.Error -> ErrorView(error = s, onRetry = viewModel::retry)
             }
         }
+    }
+}
+
+/** Signed-in identity row: channel avatar + name (or pinned email) and a switch-account action. */
+@Composable
+private fun AccountHeader(
+    state: YouTubeUiState.Playlists,
+    onSwitchAccount: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+    ) {
+        if (state.channelThumbnailUrl != null) {
+            AsyncImage(
+                model = state.channelThumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(32.dp)
+                    .aspectRatio(1f)
+                    .clip(CircleShape),
+            )
+        }
+        val identity = state.channelTitle?.takeIf { it.isNotBlank() }
+            ?: state.accountEmail
+        Text(
+            text = if (identity != null) {
+                stringResource(R.string.yt_signed_in_as, identity)
+            } else {
+                stringResource(R.string.yt_signed_in)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        PrimaryButton(
+            text = stringResource(R.string.yt_switch_account),
+            onClick = onSwitchAccount,
+        )
     }
 }
 
@@ -209,124 +244,6 @@ private fun ErrorView(error: YouTubeUiState.Error, onRetry: () -> Unit) {
                 color = MaterialTheme.colorScheme.error,
             )
             PrimaryButton(text = stringResource(R.string.common_retry), onClick = onRetry)
-        }
-    }
-}
-
-/**
- * Curated playlists pinned above the account grid. Entries are greyed out with a
- * status hint when offline or signed out; the shipped defaults are permanent.
- */
-@Composable
-private fun FeaturedRail(
-    state: FeaturedUiState,
-    onPlay: (FeaturedPlaylist) -> Unit,
-    onPickMask: (FeaturedPlaylist) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (state.items.isEmpty()) return
-    Column(modifier = modifier.fillMaxWidth().padding(top = 12.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = stringResource(R.string.yt_featured), style = MaterialTheme.typography.titleMedium)
-            val status = state.status
-            if (!state.available && status != null) {
-                Text(
-                    text = "  ⚠ ${featuredStatusText(status)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            } else {
-                Text(
-                    text = "  " + stringResource(R.string.yt_featured_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                )
-            }
-        }
-        androidx.compose.foundation.lazy.LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-        ) {
-            items(count = state.items.size, key = { state.items[it].playlistId }) { index ->
-                val item = state.items[index]
-                FeaturedCard(
-                    item = item,
-                    enabled = state.available,
-                    onClick = { if (state.available) onPlay(item) },
-                    onLongClick = { onPickMask(item) },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FeaturedCard(
-    item: FeaturedPlaylist,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
-) {
-    Card(
-        onClick = onClick,
-        onLongClick = onLongClick,
-        modifier = Modifier
-            .width(220.dp)
-            .touchClickable(onClick = onClick, onLongClick = onLongClick)
-            .alpha(if (enabled) 1f else 0.45f),
-        colors = CardDefaults.colors(
-            containerColor = Color.White.copy(alpha = 0.06f),
-            focusedContainerColor = Color.White.copy(alpha = 0.14f),
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
-        scale = CardDefaults.scale(focusedScale = 1.04f),
-    ) {
-        Column {
-            Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
-                if (item.thumbnailUrl != null) {
-                    AsyncImage(
-                        model = item.thumbnailUrl,
-                        contentDescription = item.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    // Placeholder until the bundled artwork lands.
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFF0E2A3C), Color(0xFF123B33)),
-                                ),
-                            ),
-                    )
-                }
-                if (!enabled) {
-                    Text(
-                        text = "⚠",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
-            }
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = if (item.isDefault) {
-                        stringResource(R.string.yt_featured_builtin)
-                    } else {
-                        stringResource(R.string.yt_featured)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                )
-            }
         }
     }
 }

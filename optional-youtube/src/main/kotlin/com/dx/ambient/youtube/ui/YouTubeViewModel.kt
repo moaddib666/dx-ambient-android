@@ -14,6 +14,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,7 +29,14 @@ sealed interface YouTubeUiState {
 
     data object SignedOut : YouTubeUiState
     data object Loading : YouTubeUiState
-    data class Playlists(val items: List<YouTubePlaylist>) : YouTubeUiState
+    data class Playlists(
+        val items: List<YouTubePlaylist>,
+        /** The signed-in user's channel name/avatar; null while unknown. */
+        val channelTitle: String? = null,
+        val channelThumbnailUrl: String? = null,
+        /** The pinned Google account email, when the user explicitly chose one. */
+        val accountEmail: String? = null,
+    ) : YouTubeUiState
 
     /**
      * The UI maps [kind] to a localized message; [detail] is an optional raw cause
@@ -52,6 +60,10 @@ class YouTubeViewModel @Inject constructor(
     /** Emits an [IntentSender] when the consent screen must be launched by the UI. */
     private val _consentRequests = Channel<IntentSender>(Channel.BUFFERED)
     val consentRequests = _consentRequests.receiveAsFlow()
+
+    /** Emits the system account-chooser [Intent] when the user asks to switch accounts. */
+    private val _accountPickerRequests = Channel<Intent>(Channel.BUFFERED)
+    val accountPickerRequests = _accountPickerRequests.receiveAsFlow()
 
     private var accessToken: String? = null
 
@@ -117,6 +129,30 @@ class YouTubeViewModel @Inject constructor(
         _state.value = YouTubeUiState.SignedOut
     }
 
+    /** Opens the system Google account chooser so the user can switch accounts. */
+    fun switchAccount() {
+        viewModelScope.launch { _accountPickerRequests.send(auth.chooseAccountIntent()) }
+    }
+
+    /** Pins the chosen account and re-authorizes; null (chooser cancelled) keeps everything. */
+    fun onAccountChosen(email: String?) {
+        if (email.isNullOrBlank()) return
+        viewModelScope.launch {
+            accessToken?.let { auth.invalidateToken(it) }
+            accessToken = null
+            auth.setAccount(email)
+            // Re-run sign-in for the new account; first grant may need the consent screen.
+            when (val outcome = auth.authorize()) {
+                is AuthOutcome.Token -> onToken(outcome.accessToken)
+                is AuthOutcome.NeedsConsent -> _consentRequests.send(outcome.intentSender)
+                is AuthOutcome.Failure -> _state.value = YouTubeUiState.Error(
+                    YouTubeUiState.Error.ErrorKind.SIGN_IN_FAILED,
+                    outcome.message,
+                )
+            }
+        }
+    }
+
     fun retry() {
         if (accessToken != null) loadPlaylists() else _state.value = initialState()
     }
@@ -137,8 +173,24 @@ class YouTubeViewModel @Inject constructor(
 
     private suspend fun loadPlaylistsInternal(token: String) {
         _state.value = YouTubeUiState.Loading
-        runCatching { repository.fetchMyPlaylists(token) }
-            .onSuccess { _state.value = YouTubeUiState.Playlists(it) }
+        // A stale cached token makes the Data API answer 401 while the embed still plays.
+        // withFreshToken invalidates the cached token on 401 and retries once.
+        runCatching {
+            auth.withFreshToken { fresh ->
+                accessToken = fresh
+                val playlists = repository.fetchMyPlaylists(fresh)
+                val channel = runCatching { repository.fetchMyChannel(fresh) }.getOrNull()
+                playlists to channel
+            } ?: (repository.fetchMyPlaylists(token) to null)
+        }
+            .onSuccess { (playlists, channel) ->
+                _state.value = YouTubeUiState.Playlists(
+                    items = playlists,
+                    channelTitle = channel?.title,
+                    channelThumbnailUrl = channel?.thumbnailUrl,
+                    accountEmail = auth.accountEmail.firstOrNull(),
+                )
+            }
             .onFailure {
                 _state.value = YouTubeUiState.Error(
                     YouTubeUiState.Error.ErrorKind.LOAD_FAILED,

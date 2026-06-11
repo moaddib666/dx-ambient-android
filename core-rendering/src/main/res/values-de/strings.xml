@@ -131,4 +131,23 @@
     <string name="yt_blocked_title">Diese Playlist kann hier im eingebetteten Player nicht abgespielt werden.</string>
     <string name="yt_blocked_body">YouTube blockiert eingebettete Wiedergabe auf Emulatoren und nicht zertifizierten Geräten sowie bei Videos, deren Besitzer das Einbetten deaktiviert haben. Versuche ein Play-zertifiziertes Gerät oder eine Playlist mit einbettbaren Videos.</string>
     <string name="yt_mask_for">Maske für %1$s</string>
+
+    <string name="yt_signed_in_as">Angemeldet als %1$s</string>
+    <string name="yt_signed_in">Angemeldet</string>
+    <string name="yt_switch_account">Konto wechseln</string>
+    <string name="editor_video_link">Videolink</string>
+    <string name="editor_video_link_hint">YouTube-Video-/Playlist-Link oder direkte Video-Stream-URL einfügen</string>
+    <string name="editor_link_apply">Link verwenden</string>
+    <string name="editor_link_invalid">Link nicht erkannt — YouTube-Link oder direkte http(s)-Stream-URL verwenden</string>
+    <string name="editor_my_playlists">Meine YouTube-Playlists</string>
+    <string name="editor_builtin_playlists">Integrierte Playlists</string>
+    <string name="editor_audio_stream">Audio-Stream-URL</string>
+    <string name="editor_video_opacity">Deckkraft des Videos</string>
+    <string name="editor_video_scale">Videoskalierung</string>
+    <string name="library_import_unsupported">Dieses Gerät hat keine Ordnerauswahl — der Ordnerimport ist nicht verfügbar.</string>
+    <string name="home_move_left">Nach links verschieben</string>
+    <string name="home_move_right">Nach rechts verschieben</string>
+    <string name="home_hide">Ausblenden</string>
+    <string name="home_show">Einblenden</string>
+    <string name="home_hidden_badge">Ausgeblendet</string>
 </resources>

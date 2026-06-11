@@ -155,4 +155,30 @@
     <string name="yt_blocked_title">This playlist can\'t play in the embedded player here.</string>
     <string name="yt_blocked_body">YouTube blocks embedded playback on emulators and uncertified devices, and on videos whose owners disabled embedding. Try a Play-certified device, or a playlist of embeddable videos.</string>
     <string name="yt_mask_for">Mask for %1$s</string>
+
+    <!-- YouTube account header -->
+    <string name="yt_signed_in_as">Signed in as %1$s</string>
+    <string name="yt_signed_in">Signed in</string>
+    <string name="yt_switch_account">Switch account</string>
+
+    <!-- Scene editor: link/stream/YouTube sources + video appearance -->
+    <string name="editor_video_link">Video link</string>
+    <string name="editor_video_link_hint">Paste a YouTube video or playlist link, or a direct video stream URL</string>
+    <string name="editor_link_apply">Use link</string>
+    <string name="editor_link_invalid">Unrecognized link — use a YouTube link or a direct http(s) stream URL</string>
+    <string name="editor_my_playlists">My YouTube playlists</string>
+    <string name="editor_builtin_playlists">Built-in playlists</string>
+    <string name="editor_audio_stream">Audio stream URL</string>
+    <string name="editor_video_opacity">Video opacity</string>
+    <string name="editor_video_scale">Video scale</string>
+
+    <!-- Library: devices without a documents UI -->
+    <string name="library_import_unsupported">This device has no folder picker — folder import isn\'t available.</string>
+
+    <!-- Home edit mode: reorder + hide -->
+    <string name="home_move_left">Move left</string>
+    <string name="home_move_right">Move right</string>
+    <string name="home_hide">Hide</string>
+    <string name="home_show">Show</string>
+    <string name="home_hidden_badge">Hidden</string>
 </resources>
