@@ -32,9 +32,10 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,10 +55,10 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -155,7 +156,17 @@ fun YouTubeIFrameScreen(
     // Set true when the embed can't play (YouTube's WebView Media Integrity check, or all
     // playlist videos disable embedding). The JS bridge flips this from a background thread.
     val blocked = remember { mutableStateOf(false) }
-    val bridge = remember { YouTubeJsBridge { blocked.value = true } }
+
+    // True only while the player is actually rendering video (YT.PlayerState.PLAYING).
+    // Any other state (loading, paused, buffering, between playlist items) means YouTube
+    // may be drawing its own text/overlays — the native cover below hides them all.
+    val playing = remember { mutableStateOf(false) }
+    val bridge = remember {
+        YouTubeJsBridge(
+            onBlocked = { blocked.value = true },
+            onPlayingChanged = { playing.value = it },
+        )
+    }
 
     // Focusable wrapper that intercepts BACK to exit YouTube mode entirely;
     // playback is torn down in onDispose.
@@ -235,6 +246,31 @@ fun YouTubeIFrameScreen(
                     // Lets the player JS report unplayable/blocked embeds back to native UI.
                     addJavascriptInterface(bridge, "AndroidYT")
 
+                    // The WebView itself is inert: every touch is consumed here so YouTube
+                    // can NEVER show its own UI from a tap. A clean tap (no drag) toggles
+                    // play/pause natively, mirroring the remote-center behaviour.
+                    isFocusable = false
+                    isFocusableInTouchMode = false
+                    var downX = 0f
+                    var downY = 0f
+                    setOnTouchListener { v, event ->
+                        when (event.actionMasked) {
+                            android.view.MotionEvent.ACTION_DOWN -> {
+                                downX = event.x
+                                downY = event.y
+                            }
+                            android.view.MotionEvent.ACTION_UP -> {
+                                val slop = android.view.ViewConfiguration.get(v.context).scaledTouchSlop
+                                if (kotlin.math.abs(event.x - downX) <= slop &&
+                                    kotlin.math.abs(event.y - downY) <= slop
+                                ) {
+                                    (v as WebView).evaluateJavascript(TOGGLE_JS, null)
+                                }
+                            }
+                        }
+                        true
+                    }
+
                     // Keep the user inside the embedded player: block navigations to
                     // non-YouTube origins (e.g. tapping the logo). Uses the String overload
                     // so it also fires on API 23 (minSdk).
@@ -264,20 +300,8 @@ fun YouTubeIFrameScreen(
             update = { /* No reactive updates: html is keyed via remember(). */ },
         )
 
-        // Immersive ambient mode: this transparent layer swallows every touch before it
-        // reaches the WebView, so YouTube's own UI can never appear over the mask. A tap
-        // toggles play/pause exactly like scene playback.
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { webViewHolder.value?.evaluateJavascript(TOGGLE_JS, null) },
-                    )
-                },
-        )
-
-        // Ambient alpha mask over the player. Purely decorative and not interactive.
+        // Ambient alpha mask over the player. Purely decorative and not interactive —
+        // taps are consumed by the WebView's own inert touch handler beneath.
         if (!maskUri.isNullOrBlank()) {
             coil.compose.AsyncImage(
                 model = maskUri,
@@ -293,6 +317,35 @@ fun YouTubeIFrameScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = (1f - brightness).coerceIn(0f, 1f))),
+            )
+        }
+
+        // Ambient reveal cover, mirroring AmbientStage: the embed is visible ONLY while
+        // video is actually playing. Loading spinners, the title bar, pause overlays and
+        // between-video flashes — every YouTube-drawn element — stay behind black.
+        //
+        // The reveal is additionally DELAYED after playback (re)starts: YouTube draws an
+        // auto-hiding title/controls overlay for the first few seconds of play, so the
+        // cover lifts only once that overlay is gone. Covering is instant.
+        var revealed by remember { mutableStateOf(false) }
+        LaunchedEffect(playing.value) {
+            if (playing.value) {
+                kotlinx.coroutines.delay(REVEAL_DELAY_MS)
+                revealed = true
+            } else {
+                revealed = false
+            }
+        }
+        val coverAlpha by animateFloatAsState(
+            targetValue = if (revealed) 0f else 1f,
+            animationSpec = tween(durationMillis = if (revealed) 700 else 80),
+            label = "yt-reveal",
+        )
+        if (coverAlpha > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = coverAlpha)),
             )
         }
 
@@ -490,6 +543,11 @@ private fun buildPlayerHtml(
                         clearTimeout(window.__watchdog);
                         window.__watchdog = null;
                       }
+                      // Drive the native reveal cover: the embed is only shown while
+                      // actually PLAYING, so YouTube's own overlays stay invisible.
+                      if (window.AndroidYT) {
+                        window.AndroidYT.onPlayerStateChanged(e.data);
+                      }
                     },
                     'onError': function (e) {
                       // Some videos disable embedding (errors 101/150/152). In a playlist, skip
@@ -528,12 +586,25 @@ private fun buildPlayerHtml(
  * JS → native bridge. Must be a public, named class: `addJavascriptInterface` reaches
  * `@JavascriptInterface` methods via reflection, which fails on Kotlin anonymous objects.
  */
-class YouTubeJsBridge(private val onBlocked: () -> Unit) {
+class YouTubeJsBridge(
+    private val onBlocked: () -> Unit,
+    private val onPlayingChanged: (Boolean) -> Unit = {},
+) {
     private val main = Handler(Looper.getMainLooper())
 
     @JavascriptInterface
     fun onUnplayable() {
         main.post { onBlocked() }
+    }
+
+    /** Mirrors YT.PlayerState — 1 is PLAYING; everything else keeps the cover up. */
+    @JavascriptInterface
+    fun onPlayerStateChanged(state: Int) {
+        main.post { onPlayingChanged(state == YT_STATE_PLAYING) }
+    }
+
+    private companion object {
+        const val YT_STATE_PLAYING = 1
     }
 }
 
@@ -551,11 +622,20 @@ private const val PAUSE_JS =
     "if (window.player && typeof window.player.pauseVideo === 'function') " +
         "{ window.player.pauseVideo(); }"
 
-/** JS evaluated on tap / remote-center: toggles play (1) ↔ pause, like scene playback. */
+/** How long after PLAYING starts the cover stays up, letting YouTube's overlay auto-hide. */
+private const val REVEAL_DELAY_MS = 3_200L
+
+/**
+ * JS evaluated on tap / remote-center: toggles play (1) ↔ pause, like scene playback.
+ * The pause branch reports the paused state to native BEFORE pausing so the black cover
+ * is already up when YouTube draws its pause overlay.
+ */
 private const val TOGGLE_JS =
     "if (window.player && typeof window.player.getPlayerState === 'function') {" +
-        " if (window.player.getPlayerState() === 1) { window.player.pauseVideo(); }" +
-        " else { window.player.playVideo(); } }"
+        " if (window.player.getPlayerState() === 1) {" +
+        "   if (window.AndroidYT) { window.AndroidYT.onPlayerStateChanged(2); }" +
+        "   window.player.pauseVideo();" +
+        " } else { window.player.playVideo(); } }"
 
 /** Minimal escaping for values interpolated into single-quoted JS strings. */
 private fun String.escapeForJs(): String =
