@@ -18,7 +18,8 @@
  *
  *  This is the ONLY place a YouTube video is ever rendered, and only ever
  *  through the official IFrame Player API loaded from
- *  https://www.youtube.com/iframe_api .
+ *  https://www.youtube.com/iframe_api . The player itself is hosted on the
+ *  official privacy-enhanced endpoint https://www.youtube-nocookie.com .
  * ============================================================================
  */
 package com.dx.ambient.youtube
@@ -54,11 +55,13 @@ import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.dx.ambient.rendering.R
 import com.dx.ambient.rendering.components.PrimaryButton
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -99,7 +102,11 @@ fun YouTubeIFrameScreen(
     // No source configured (e.g. the host hasn't wired a picker yet): show a calm placeholder
     // instead of an empty player, while still honoring BACK.
     if (videoId.isNullOrBlank() && playlistId.isNullOrBlank()) {
-        YouTubeMessage(message = "No YouTube source selected.", onExit = onExit, modifier = modifier)
+        YouTubeMessage(
+            message = stringResource(R.string.yt_no_source),
+            onExit = onExit,
+            modifier = modifier,
+        )
         return
     }
 
@@ -113,7 +120,11 @@ fun YouTubeIFrameScreen(
         LaunchedEffect(playlistId) { playerViewModel.resolve(playlistId) }
         when (val r = resolution) {
             YouTubePlayerViewModel.Resolution.Resolving -> {
-                YouTubeMessage(message = "Loading playlist…", onExit = onExit, modifier = modifier)
+                YouTubeMessage(
+                    message = stringResource(R.string.yt_loading_playlist),
+                    onExit = onExit,
+                    modifier = modifier,
+                )
                 return
             }
             is YouTubePlayerViewModel.Resolution.Ready -> resolvedVideoIds = r.videoIds
@@ -182,8 +193,17 @@ fun YouTubeIFrameScreen(
                     }
 
                     // HTML5 <video>/IFrame media requires a WebChromeClient — without it YouTube
-                    // refuses to play (renders "This video is unavailable").
-                    webChromeClient = WebChromeClient()
+                    // refuses to play (renders "This video is unavailable"). Console messages are
+                    // forwarded to logcat so embed errors (101/150/152) are diagnosable on-device.
+                    webChromeClient = object : WebChromeClient() {
+                        override fun onConsoleMessage(message: android.webkit.ConsoleMessage): Boolean {
+                            android.util.Log.d(
+                                "YouTubeIFrame",
+                                "${message.messageLevel()}: ${message.message()}",
+                            )
+                            return true
+                        }
+                    }
 
                     // Lets the player JS report unplayable/blocked embeds back to native UI.
                     addJavascriptInterface(bridge, "AndroidYT")
@@ -200,10 +220,13 @@ fun YouTubeIFrameScreen(
                         }
                     }
 
-                    // Base URL must be a youtube.com origin for the IFrame API
-                    // to accept the embed.
+                    // Base URL must match the player's `origin`/`host` for the
+                    // IFrame API to accept the embed. The privacy-enhanced
+                    // youtube-nocookie.com origin is used because YouTube's
+                    // embed checks reject WebView pages that claim to be
+                    // www.youtube.com itself (error 152-4 "Video unavailable").
                     loadDataWithBaseURL(
-                        "https://www.youtube.com",
+                        EMBED_ORIGIN,
                         html,
                         "text/html",
                         "utf-8",
@@ -238,16 +261,14 @@ fun YouTubeIFrameScreen(
                     modifier = Modifier.padding(32.dp),
                 ) {
                     Text(
-                        text = "This playlist can't play in the embedded player here.",
+                        text = stringResource(R.string.yt_blocked_title),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                     Text(
-                        text = "YouTube blocks embedded playback on emulators and uncertified " +
-                            "devices, and on videos whose owners disabled embedding. Try a " +
-                            "Play-certified device, or a playlist of embeddable videos.",
+                        text = stringResource(R.string.yt_blocked_body),
                         style = MaterialTheme.typography.bodyMedium,
                     )
-                    PrimaryButton(text = "Back", onClick = onExit)
+                    PrimaryButton(text = stringResource(R.string.common_back), onClick = onExit)
                 }
             }
         }
@@ -397,10 +418,10 @@ private fun buildPlayerHtml(
                   playerVars: {
                     $playerVarsBody,
                     'enablejsapi': 1,
-                    'origin': 'https://www.youtube.com',
-                    'widget_referrer': 'https://www.youtube.com'
+                    'origin': '$EMBED_ORIGIN',
+                    'widget_referrer': '$EMBED_ORIGIN'
                   },
-                  host: 'https://www.youtube.com',
+                  host: '$EMBED_ORIGIN',
                   events: {
                     'onReady': function (e) { $onReadyBody },
                     'onStateChange': function (e) {
@@ -412,6 +433,7 @@ private fun buildPlayerHtml(
                     'onError': function (e) {
                       // Some videos disable embedding (errors 101/150/152). In a playlist, skip
                       // ahead to the next item so a playable one is found (bounded to avoid loops).
+                      console.error('YT player onError code=' + e.data);
                       if (window.__skips === undefined) window.__skips = 0;
                       if (window.__skips < 50) {
                         window.__skips++;
@@ -453,6 +475,15 @@ class YouTubeJsBridge(private val onBlocked: () -> Unit) {
         main.post { onBlocked() }
     }
 }
+
+/**
+ * Origin the embed page claims and the host the player loads from. The
+ * privacy-enhanced youtube-nocookie.com endpoint is an official IFrame Player
+ * API host; using it avoids YouTube's origin-mismatch rejection (error 152-4
+ * "This video is unavailable — Watch on YouTube") that fires when a WebView
+ * page poses as www.youtube.com itself.
+ */
+private const val EMBED_ORIGIN = "https://www.youtube-nocookie.com"
 
 /** JS evaluated to pause playback when leaving the RESUMED state. */
 private const val PAUSE_JS =
