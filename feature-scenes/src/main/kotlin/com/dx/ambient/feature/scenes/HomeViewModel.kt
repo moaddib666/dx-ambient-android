@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dx.ambient.domain.model.Scene
 import com.dx.ambient.domain.repository.SceneRepository
+import com.dx.ambient.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val sceneRepository: SceneRepository,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     /** Live list of saved scenes, ordered as the repository emits them. */
@@ -29,6 +32,22 @@ class HomeViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = emptyList(),
         )
+
+    /** True until the user dismisses the first-launch guide (false while loading). */
+    val showOnboarding: StateFlow<Boolean> = settingsRepository.observeSettings()
+        .map { !it.onboardingCompleted }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = false,
+        )
+
+    /** Persists that the guide was seen; it never auto-shows again. */
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            settingsRepository.update { it.copy(onboardingCompleted = true) }
+        }
+    }
 
     /** Clone an existing scene into a fresh, independent copy (MVP feature 7). */
     fun duplicate(id: String) {

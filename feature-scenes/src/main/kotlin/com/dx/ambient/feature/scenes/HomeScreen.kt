@@ -88,12 +88,19 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     /** Optional entry to the isolated YouTube mode. Null hides it (e.g. devices without Play). */
     onOpenYouTube: (() -> Unit)? = null,
-    /** Curated playlists pinned above the scene grid; empty hides the rail. */
+    /** Curated playlists merged into the scene row; empty hides them. */
     featuredTiles: List<FeaturedTile> = emptyList(),
     onPlayFeatured: ((String) -> Unit)? = null,
+    /** Edit-mode action for a featured tile (e.g. pick its mask). */
+    onEditFeatured: ((String) -> Unit)? = null,
 ) {
     val viewModel: HomeViewModel = hiltViewModel()
     val scenes by viewModel.state.collectAsStateWithLifecycle()
+    val showOnboarding by viewModel.showOnboarding.collectAsStateWithLifecycle()
+
+    // TV remotes can't long-press reliably, so editing is an explicit mode:
+    // while ON, selecting a card edits it instead of playing it.
+    var editMode by remember { mutableStateOf(false) }
 
     // On TV, give the first action initial focus so a D-pad/remote has somewhere to land on
     // launch. On touch devices no focus is requested — the user just taps.
@@ -104,6 +111,7 @@ fun HomeScreen(
     }
 
     AmbientScreen(modifier = modifier) {
+      Box(modifier = Modifier.fillMaxSize()) {
       Column(
         modifier = Modifier
             .fillMaxSize()
@@ -124,13 +132,29 @@ fun HomeScreen(
             if (onOpenYouTube != null) {
                 PrimaryButton(text = "YouTube", onClick = onOpenYouTube)
             }
+            PrimaryButton(
+                text = if (editMode) "✎ Editing…" else "Edit",
+                onClick = { editMode = !editMode },
+            )
         }
 
-        if (featuredTiles.isNotEmpty() && onPlayFeatured != null) {
-            FeaturedRail(tiles = featuredTiles, onPlay = onPlayFeatured)
-        }
+        // One combined row: local scenes first, then featured playlists,
+        // unavailable featured entries aligned at the end.
+        val sortedFeatured = featuredTiles.sortedBy { !it.enabled }
+        val disabledHint = featuredTiles.firstOrNull { !it.enabled }?.statusHint
 
-        if (scenes.isEmpty()) {
+        Text(
+            text = when {
+                editMode -> "Edit mode: select a card to edit it • press Edit again to finish"
+                disabledHint != null -> "⚠ $disabledHint"
+                else -> " "
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = if (editMode) NeonCyan else Color(0xFFFFB74D),
+            modifier = Modifier.padding(top = 12.dp),
+        )
+
+        if (scenes.isEmpty() && sortedFeatured.isEmpty()) {
             EmptyState(
                 title = "No scenes yet",
                 message = "Create your first ambient scene to get started.",
@@ -138,77 +162,124 @@ fun HomeScreen(
                 action = { PrimaryButton(text = "New Scene", onClick = onCreateScene) },
             )
         } else {
-            LazyVerticalGrid(
-                // Compact, adaptive columns so several cards fit per row and whole rows stay
-                // visible — instead of a few oversized cards that get cropped.
-                columns = GridCells.Adaptive(minSize = 200.dp),
+            LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                // Inner padding so a focused (scaled) card has room to grow without being clipped
-                // by the grid bounds — especially the top row.
-                contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp, start = 4.dp, end = 4.dp),
-                modifier = Modifier.fillMaxSize(),
+                // Inner padding so a focused (scaled) card has room to grow without
+                // being clipped by the row bounds.
+                contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp, start = 4.dp, end = 4.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 items(items = scenes, key = { it.id }) { scene ->
                     SceneCard(
                         scene = scene,
+                        editMode = editMode,
                         onPlay = { onPlayScene(scene.id) },
                         onEdit = { onEditScene(scene.id) },
                         onDuplicate = { viewModel.duplicate(scene.id) },
                         onDelete = { viewModel.delete(scene.id) },
+                        modifier = Modifier.width(220.dp),
                     )
+                }
+                if (onPlayFeatured != null) {
+                    items(items = sortedFeatured, key = { it.id }) { tile ->
+                        FeaturedTileCard(
+                            tile = tile,
+                            editMode = editMode,
+                            onPlay = onPlayFeatured,
+                            onEdit = onEditFeatured,
+                        )
+                    }
                 }
             }
         }
+      }
+
+      if (showOnboarding) {
+          OnboardingOverlay(onDismiss = viewModel::completeOnboarding)
+      }
       }
     }
 }
 
 /**
- * Horizontal rail of curated playlist tiles. Disabled tiles render greyed out
- * with a warning marker and the reason (no internet / sign-in required); the
- * rail itself never disappears, so the curated content is always discoverable.
+ * One-time first-launch guide. Shown until dismissed, then never again
+ * (persisted in settings). One screen, remote-first: OK lands on "Got it".
  */
 @Composable
-private fun FeaturedRail(
-    tiles: List<FeaturedTile>,
-    onPlay: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val disabledHint = tiles.firstOrNull { !it.enabled }?.statusHint
-    Column(modifier = modifier.fillMaxWidth().padding(top = 20.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = "Featured", style = MaterialTheme.typography.titleMedium)
-            if (disabledHint != null) {
-                Text(
-                    text = "  ⚠ $disabledHint",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFFFFB74D),
+private fun OnboardingOverlay(onDismiss: () -> Unit) {
+    val okFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { okFocus.requestFocus() } }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.82f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    color = Color(0xFF12161B).copy(alpha = 0.97f),
+                    shape = RoundedCornerShape(20.dp),
                 )
-            }
-        }
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(vertical = 12.dp, horizontal = 4.dp),
-            modifier = Modifier.fillMaxWidth(),
+                .padding(32.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            items(items = tiles, key = { it.id }) { tile ->
-                FeaturedTileCard(tile = tile, onPlay = onPlay)
-            }
+            Text(text = "Welcome to DX Ambient", style = MaterialTheme.typography.headlineSmall)
+            GuideLine("▶", "Select a scene card with OK to play it — your room becomes the scene.")
+            GuideLine("✎", "Press Edit in the top bar, then select a card to edit it (on touch screens you can also long-press).")
+            GuideLine("◀ ▶", "While playing: left/right switches scenes, OK pauses, BACK or swipe down returns here.")
+            GuideLine("★", "Featured playlists stream via YouTube — they need internet and a YouTube sign-in.")
+            GuideLine("◐", "Masks frame your video: pick one in the scene editor and preview it live.")
+            PrimaryButton(
+                text = "Got it",
+                onClick = onDismiss,
+                modifier = Modifier.focusRequester(okFocus).padding(top = 8.dp),
+            )
         }
     }
 }
 
 @Composable
-private fun FeaturedTileCard(tile: FeaturedTile, onPlay: (String) -> Unit) {
+private fun GuideLine(symbol: String, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = symbol,
+            style = MaterialTheme.typography.titleMedium,
+            color = NeonCyan,
+            modifier = Modifier.width(48.dp),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.9f),
+        )
+    }
+}
+
+@Composable
+private fun FeaturedTileCard(
+    tile: FeaturedTile,
+    editMode: Boolean,
+    onPlay: (String) -> Unit,
+    onEdit: ((String) -> Unit)?,
+) {
     val shape = RoundedCornerShape(14.dp)
-    val play = { if (tile.enabled) onPlay(tile.id) }
+    // Edit mode works regardless of availability (a mask can be picked offline);
+    // playing requires the tile to be enabled.
+    val activate = {
+        when {
+            editMode && onEdit != null -> onEdit(tile.id)
+            tile.enabled -> onPlay(tile.id)
+            else -> Unit
+        }
+    }
     Card(
-        onClick = play,
+        onClick = activate,
         modifier = Modifier
             .width(220.dp)
-            .touchClickable(onClick = play)
-            .alpha(if (tile.enabled) 1f else 0.45f),
+            .touchClickable(onClick = activate)
+            .alpha(if (tile.enabled || editMode) 1f else 0.45f),
         shape = CardDefaults.shape(shape),
         colors = CardDefaults.colors(
             containerColor = Color.White.copy(alpha = 0.05f),
@@ -238,11 +309,19 @@ private fun FeaturedTileCard(tile: FeaturedTile, onPlay: (String) -> Unit) {
                         ),
                 )
             }
-            if (!tile.enabled) {
+            if (!tile.enabled && !editMode) {
                 Text(
                     text = "⚠",
                     style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.align(Alignment.Center),
+                )
+            }
+            if (editMode) {
+                Text(
+                    text = "✎",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = NeonCyan,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
                 )
             }
             Box(
@@ -274,6 +353,7 @@ private fun FeaturedTileCard(tile: FeaturedTile, onPlay: (String) -> Unit) {
 @Composable
 private fun SceneCard(
     scene: Scene,
+    editMode: Boolean,
     onPlay: () -> Unit,
     onEdit: () -> Unit,
     onDuplicate: () -> Unit,
@@ -282,15 +362,18 @@ private fun SceneCard(
 ) {
     var showActions by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(14.dp)
+    // In edit mode (the TV-friendly path — remotes can't long-press) selecting the
+    // card opens the actions sheet instead of playing. Long-press still works on touch.
+    val activate = { if (editMode) showActions = true else onPlay() }
 
     Card(
-        onClick = onPlay,
+        onClick = activate,
         onLongClick = { showActions = true },
         // Touch/mouse bridge: tv-material Card only reacts to D-pad ENTER, so taps and
         // long-presses are wired up explicitly for phones/tablets.
         modifier = modifier
             .fillMaxWidth()
-            .touchClickable(onClick = onPlay, onLongClick = { showActions = true }),
+            .touchClickable(onClick = activate, onLongClick = { showActions = true }),
         shape = CardDefaults.shape(shape),
         // Semi-transparent "glass" that brightens on focus.
         colors = CardDefaults.colors(
@@ -313,6 +396,14 @@ private fun SceneCard(
     ) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(16f / 9f)) {
             SceneThumbnail(scene = scene, modifier = Modifier.fillMaxSize())
+            if (editMode) {
+                Text(
+                    text = "✎",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = NeonCyan,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+                )
+            }
             // Bottom gradient so the title stays legible over any image.
             Box(
                 modifier = Modifier

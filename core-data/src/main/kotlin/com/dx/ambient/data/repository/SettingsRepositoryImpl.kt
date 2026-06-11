@@ -33,6 +33,7 @@ class SettingsRepositoryImpl @Inject constructor(
             prefs[Keys.RESUME_LAST] = updated.resumeLastSceneOnLaunch
             prefs[Keys.DEFAULTS_SEEDED] = updated.defaultsSeeded
             prefs[Keys.SEEDED_DEFAULT_IDS] = updated.seededDefaultIds
+            prefs[Keys.ONBOARDING_DONE] = updated.onboardingCompleted
             updated.lastSceneId?.let { prefs[Keys.LAST_SCENE] = it } ?: prefs.remove(Keys.LAST_SCENE)
         }
     }
@@ -56,6 +57,7 @@ class SettingsRepositoryImpl @Inject constructor(
             lastSceneId = this[Keys.LAST_SCENE],
             defaultsSeeded = this[Keys.DEFAULTS_SEEDED] ?: defaults.defaultsSeeded,
             seededDefaultIds = this[Keys.SEEDED_DEFAULT_IDS] ?: defaults.seededDefaultIds,
+            onboardingCompleted = this[Keys.ONBOARDING_DONE] ?: defaults.onboardingCompleted,
         )
     }
 
@@ -70,5 +72,6 @@ class SettingsRepositoryImpl @Inject constructor(
         val LAST_SCENE = stringPreferencesKey("last_scene_id")
         val DEFAULTS_SEEDED = booleanPreferencesKey("defaults_seeded")
         val SEEDED_DEFAULT_IDS = stringSetPreferencesKey("seeded_default_ids")
+        val ONBOARDING_DONE = booleanPreferencesKey("onboarding_completed")
     }
 }

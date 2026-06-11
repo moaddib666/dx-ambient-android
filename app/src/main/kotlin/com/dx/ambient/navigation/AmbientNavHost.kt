@@ -22,7 +22,11 @@ import com.dx.ambient.feature.scenes.SceneEditorScreen
 import com.dx.ambient.feature.settings.DeviceInfoScreen
 import com.dx.ambient.feature.settings.SettingsScreen
 import com.dx.ambient.rendering.components.AmbientScreen
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import com.dx.ambient.youtube.YouTubeIFrameScreen
+import com.dx.ambient.youtube.ui.MaskPickerDialog
 import com.dx.ambient.youtube.ui.YouTubeFeaturedViewModel
 import com.dx.ambient.youtube.ui.YouTubeTabScreen
 
@@ -64,6 +68,7 @@ fun AmbientNavHost() {
             // when online + silently signed in; otherwise greyed out with the reason.
             var featuredTiles: List<FeaturedTile> = emptyList()
             var featuredMasks: Map<String, String?> = emptyMap()
+            var onEditFeatured: ((String) -> Unit)? = null
             if (BuildConfig.YOUTUBE_MODE_ENABLED) {
                 val featuredViewModel: YouTubeFeaturedViewModel = hiltViewModel()
                 val featured by featuredViewModel.state.collectAsStateWithLifecycle()
@@ -78,6 +83,26 @@ fun AmbientNavHost() {
                     )
                 }
                 featuredMasks = featured.items.associate { it.playlistId to it.maskUri }
+
+                // Edit mode on Home: selecting a featured tile opens its mask picker
+                // (TV remotes have no long-press).
+                var maskPickerFor by remember { mutableStateOf<String?>(null) }
+                onEditFeatured = { playlistId -> maskPickerFor = playlistId }
+                maskPickerFor?.let { playlistId ->
+                    val target = featured.items.firstOrNull { it.playlistId == playlistId }
+                    if (target != null) {
+                        MaskPickerDialog(
+                            title = target.title,
+                            masks = featuredViewModel.bundledMasks(),
+                            selectedUri = target.maskUri,
+                            onSelect = { uri ->
+                                featuredViewModel.setMask(playlistId, uri)
+                                maskPickerFor = null
+                            },
+                            onDismiss = { maskPickerFor = null },
+                        )
+                    }
+                }
             }
 
             HomeScreen(
@@ -97,6 +122,7 @@ fun AmbientNavHost() {
                         Routes.youtubePlayer(playlistId, featuredMasks[playlistId]),
                     )
                 },
+                onEditFeatured = onEditFeatured,
             )
         }
 

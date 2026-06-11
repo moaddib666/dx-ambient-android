@@ -37,6 +37,9 @@ data class ProjectorSettings(
      * appear on existing installs without resurrecting ones the user deliberately deleted.
      */
     val seededDefaultIds: Set<String> = emptySet(),
+
+    /** True once the first-launch UI guide has been dismissed. */
+    val onboardingCompleted: Boolean = false,
 ) {
     val hasSleepTimer: Boolean get() = sleepTimerMinutes > 0
     val hasAutoDim: Boolean get() = dimAfterMinutes > 0
