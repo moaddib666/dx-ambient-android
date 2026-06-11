@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
@@ -81,6 +82,29 @@ fun LibraryScreen(
             title = "Media Library",
             subtitle = "Import folders from local storage or USB, then browse your media.",
         )
+
+        // Import/remove/refresh failures were previously silent; surface them here.
+        state.errorMessage?.let { message ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f),
+                )
+                IconTextButton(
+                    text = "Dismiss",
+                    icon = Icons.Default.Close,
+                    onClick = viewModel::dismissError,
+                )
+            }
+        }
 
         Row(
             modifier = Modifier

@@ -1,5 +1,6 @@
 package com.dx.ambient.boot
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dx.ambient.domain.repository.SceneRepository
@@ -36,7 +37,9 @@ class BootViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            // Boot must proceed even if seeding fails, but never silently.
             runCatching { seedDefaultScenes() }
+                .onFailure { Log.e(TAG, "Seeding default scenes failed", it) }
             val settings = settingsRepository.observeSettings().first()
             val resumeId = settings.lastSceneId?.takeIf { settings.resumeLastSceneOnLaunch }
             _decision.value = when {
@@ -45,5 +48,9 @@ class BootViewModel @Inject constructor(
                 else -> BootDecision.OpenHome
             }
         }
+    }
+
+    private companion object {
+        const val TAG = "BootViewModel"
     }
 }

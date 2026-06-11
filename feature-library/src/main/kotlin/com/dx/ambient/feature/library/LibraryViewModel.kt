@@ -21,6 +21,8 @@ data class LibraryUiState(
     val folders: List<ImportedFolder> = emptyList(),
     val media: List<LibraryMedia> = emptyList(),
     val isImporting: Boolean = false,
+    /** User-visible failure from the last import/remove/refresh, dismissable. */
+    val errorMessage: String? = null,
 )
 
 /**
@@ -35,16 +37,19 @@ class LibraryViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val importingState = kotlinx.coroutines.flow.MutableStateFlow(false)
+    private val errorState = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<LibraryUiState> = combine(
         mediaLibraryRepository.observeFolders(),
         mediaLibraryRepository.observeMedia(null),
         importingState,
-    ) { folders, media, isImporting ->
+        errorState,
+    ) { folders, media, isImporting, errorMessage ->
         LibraryUiState(
             folders = folders,
             media = media,
             isImporting = isImporting,
+            errorMessage = errorMessage,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -57,6 +62,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             importingState.value = true
             runCatching { mediaLibraryRepository.importFolder(treeUri) }
+                .onFailure { errorState.value = "Couldn't import the folder: ${it.userMessage()}" }
             importingState.value = false
         }
     }
@@ -65,6 +71,7 @@ class LibraryViewModel @Inject constructor(
     fun removeFolder(treeUri: String) {
         viewModelScope.launch {
             runCatching { mediaLibraryRepository.removeFolder(treeUri) }
+                .onFailure { errorState.value = "Couldn't remove the folder: ${it.userMessage()}" }
         }
     }
 
@@ -73,7 +80,15 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             importingState.value = true
             runCatching { mediaLibraryRepository.refresh() }
+                .onFailure { errorState.value = "Couldn't refresh the library: ${it.userMessage()}" }
             importingState.value = false
         }
     }
+
+    fun dismissError() {
+        errorState.value = null
+    }
+
+    private fun Throwable.userMessage(): String =
+        message?.takeIf { it.isNotBlank() } ?: "the folder is no longer accessible"
 }

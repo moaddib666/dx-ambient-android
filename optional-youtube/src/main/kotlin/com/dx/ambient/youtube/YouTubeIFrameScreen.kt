@@ -355,7 +355,13 @@ private fun buildPlayerHtml(videoId: String?, playlistId: String?): String {
                       if (window.__skips === undefined) window.__skips = 0;
                       if (window.__skips < 50) {
                         window.__skips++;
-                        try { e.target.nextVideo(); } catch (err) {}
+                        try {
+                          e.target.nextVideo();
+                        } catch (err) {
+                          // Skipping is impossible (player broken) — give up loudly.
+                          console.error('nextVideo failed: ' + err);
+                          if (window.AndroidYT) { window.AndroidYT.onUnplayable(); }
+                        }
                       } else if (window.AndroidYT) {
                         window.AndroidYT.onUnplayable();
                       }
