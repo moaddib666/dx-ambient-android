@@ -36,4 +36,10 @@ enum class MediaSourceType {
      * isolated `optional-youtube` module. Never extracted, never backgrounded.
      */
     YOUTUBE,
+
+    /**
+     * A direct remote http(s) media stream URL (video or audio — e.g. an internet radio
+     * stream as a scene soundtrack), played through the regular ExoPlayer pipeline.
+     */
+    STREAM,
 }

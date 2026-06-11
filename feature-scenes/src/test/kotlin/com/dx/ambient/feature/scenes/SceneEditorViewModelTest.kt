@@ -1,9 +1,12 @@
 package com.dx.ambient.feature.scenes
 
 import android.content.Context
+import com.dx.ambient.domain.catalog.CatalogPlaylist
+import com.dx.ambient.domain.catalog.YouTubeCatalog
 import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.LoopMode
 import com.dx.ambient.domain.model.MediaKind
+import com.dx.ambient.domain.model.MediaSource
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.usecase.SaveSceneUseCase
 import com.dx.ambient.playback.AmbientPlayer
@@ -36,8 +39,29 @@ class SceneEditorViewModelTest {
 
     private val player = mockk<AmbientPlayer>(relaxed = true)
 
+    /** Offline fake: YouTube unavailable, recognizes nothing as a YouTube link. */
+    private val youTubeCatalog = object : YouTubeCatalog {
+        override suspend fun isAvailable(): Boolean = false
+        override suspend fun myPlaylists(): List<CatalogPlaylist> = emptyList()
+        override fun builtInPlaylists(): List<CatalogPlaylist> = emptyList()
+        override fun parseLink(input: String): MediaSource? = null
+        override fun playlistSource(playlist: CatalogPlaylist): MediaSource =
+            MediaSource(
+                uri = "https://www.youtube.com/playlist?list=${playlist.id}",
+                type = MediaSourceType.YOUTUBE,
+                displayName = playlist.title,
+            )
+    }
+
     private fun newViewModel() =
-        SceneEditorViewModel(context, sceneRepo, mediaRepo, SaveSceneUseCase(sceneRepo), player)
+        SceneEditorViewModel(
+            context,
+            sceneRepo,
+            mediaRepo,
+            SaveSceneUseCase(sceneRepo),
+            youTubeCatalog,
+            player,
+        )
 
     @Test
     fun `bind null starts a fresh draft`() {
@@ -107,6 +131,38 @@ class SceneEditorViewModelTest {
         vm.clearMask()
         assertEquals(MediaSourceType.NONE, vm.draft.value.audioSource.type)
         assertFalse(vm.draft.value.mask.enabled)
+    }
+
+    @Test
+    fun `setVideoAlpha and setVideoScale clamp to their ranges`() {
+        val vm = newViewModel()
+        vm.setVideoAlpha(1.5f)
+        assertEquals(1f, vm.draft.value.videoAlpha)
+        vm.setVideoAlpha(-1f)
+        assertEquals(0f, vm.draft.value.videoAlpha)
+        vm.setVideoScale(5f)
+        assertEquals(2f, vm.draft.value.videoScale)
+        vm.setVideoScale(0.1f)
+        assertEquals(0.5f, vm.draft.value.videoScale)
+    }
+
+    @Test
+    fun `setVideoLink accepts a direct stream URL and rejects garbage`() {
+        val vm = newViewModel()
+        assertTrue(vm.setVideoLink("https://example.com/ambient.mp4"))
+        assertEquals(MediaSourceType.STREAM, vm.draft.value.videoSource.type)
+        assertEquals("https://example.com/ambient.mp4", vm.draft.value.videoSource.uri)
+        assertFalse(vm.setVideoLink("not a url at all"))
+        assertEquals(MediaSourceType.STREAM, vm.draft.value.videoSource.type)
+    }
+
+    @Test
+    fun `setAudioStream accepts http URLs only`() {
+        val vm = newViewModel()
+        assertTrue(vm.setAudioStream("http://radio.example.com/lofi"))
+        assertEquals(MediaSourceType.STREAM, vm.draft.value.audioSource.type)
+        assertFalse(vm.setAudioStream("ftp://radio.example.com/lofi"))
+        assertFalse(vm.setAudioStream("just words"))
     }
 
     @Test

@@ -83,6 +83,8 @@ fun SceneEditorScreen(
     val audios by viewModel.audios.collectAsStateWithLifecycle()
     val masks by viewModel.masks.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
+    val youTubeAvailable by viewModel.youTubeAvailable.collectAsStateWithLifecycle()
+    val myPlaylists by viewModel.myPlaylists.collectAsStateWithLifecycle()
 
     LaunchedEffect(sceneId) {
         viewModel.bind(sceneId)
@@ -145,6 +147,40 @@ fun SceneEditorScreen(
                 emptyHint = stringResource(R.string.editor_video_empty_hint),
             )
 
+            // Remote picture sources: a pasted YouTube/stream link, the signed-in user's
+            // playlists, and the playlists bundled with the app.
+            LinkInputRow(
+                label = stringResource(R.string.editor_video_link),
+                hint = stringResource(R.string.editor_video_link_hint),
+                selectedName = when (draft.videoSource.type) {
+                    MediaSourceType.YOUTUBE, MediaSourceType.STREAM ->
+                        draft.videoSource.displayName ?: draft.videoSource.uri
+                    else -> null
+                },
+                onApply = viewModel::setVideoLink,
+            )
+
+            if (youTubeAvailable && myPlaylists.isNotEmpty()) {
+                PlaylistChipsRow(
+                    label = stringResource(R.string.editor_my_playlists),
+                    playlists = myPlaylists,
+                    selectedUri = draft.videoSource.uri.takeIf {
+                        draft.videoSource.type == MediaSourceType.YOUTUBE
+                    },
+                    onPick = viewModel::pickYouTubePlaylist,
+                )
+            }
+            if (viewModel.builtInPlaylists.isNotEmpty()) {
+                PlaylistChipsRow(
+                    label = stringResource(R.string.editor_builtin_playlists),
+                    playlists = viewModel.builtInPlaylists,
+                    selectedUri = draft.videoSource.uri.takeIf {
+                        draft.videoSource.type == MediaSourceType.YOUTUBE
+                    },
+                    onPick = viewModel::pickYouTubePlaylist,
+                )
+            }
+
             MediaPickerRow(
                 label = stringResource(R.string.editor_audio_source),
                 media = audios,
@@ -154,6 +190,16 @@ fun SceneEditorScreen(
                 onPick = viewModel::pickAudio,
                 clearLabel = stringResource(R.string.editor_use_video_audio),
                 onClear = viewModel::clearAudio,
+            )
+
+            // Separate soundtrack from a remote stream (e.g. internet radio).
+            LinkInputRow(
+                label = stringResource(R.string.editor_audio_stream),
+                hint = null,
+                selectedName = draft.audioSource.displayName.takeIf {
+                    draft.audioSource.type == MediaSourceType.STREAM
+                },
+                onApply = viewModel::setAudioStream,
             )
 
             MaskGalleryRow(
@@ -171,6 +217,20 @@ fun SceneEditorScreen(
                 brightness = draft.brightness,
                 onDecrease = { viewModel.setBrightness(draft.brightness - 0.05f) },
                 onIncrease = { viewModel.setBrightness(draft.brightness + 0.05f) },
+            )
+
+            // Video-only appearance, independent of the whole-stage brightness above.
+            PercentStepper(
+                label = stringResource(R.string.editor_video_opacity),
+                value = draft.videoAlpha,
+                range = 0f..1f,
+                onChange = viewModel::setVideoAlpha,
+            )
+            PercentStepper(
+                label = stringResource(R.string.editor_video_scale),
+                value = draft.videoScale,
+                range = 0.5f..2f,
+                onChange = viewModel::setVideoScale,
             )
 
             ToggleRow(label = stringResource(R.string.editor_loop_mode)) {
@@ -524,6 +584,146 @@ private fun MediaChip(text: String, selected: Boolean, onClick: () -> Unit) {
                 } else {
                     MaterialTheme.colorScheme.onSurface
                 },
+            )
+        }
+    }
+}
+
+/**
+ * Single-line URL entry with an apply button — used for YouTube/stream video links and
+ * audio stream URLs. [onApply] returns false for unusable input, which shows an inline
+ * error; on success the field clears and [selectedName] echoes the chosen source.
+ */
+@Composable
+private fun LinkInputRow(
+    label: String,
+    hint: String?,
+    selectedName: String?,
+    onApply: (String) -> Boolean,
+) {
+    var text by remember { mutableStateOf("") }
+    var invalid by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Text(text = label, style = MaterialTheme.typography.titleMedium)
+            if (selectedName != null) {
+                Text(
+                    text = "✓ $selectedName",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.border,
+                        shape = RoundedCornerShape(8.dp),
+                    ),
+            ) {
+                BasicTextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                        invalid = false
+                    },
+                    singleLine = true,
+                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            PrimaryButton(
+                text = stringResource(R.string.editor_link_apply),
+                onClick = {
+                    if (text.isBlank()) return@PrimaryButton
+                    if (onApply(text)) {
+                        text = ""
+                        invalid = false
+                    } else {
+                        invalid = true
+                    }
+                },
+            )
+        }
+        when {
+            invalid -> Text(
+                text = stringResource(R.string.editor_link_invalid),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            hint != null -> Text(
+                text = hint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            )
+        }
+    }
+}
+
+/** Chips row of remote playlists (selected = the draft already points at that playlist). */
+@Composable
+private fun PlaylistChipsRow(
+    label: String,
+    playlists: List<com.dx.ambient.domain.catalog.CatalogPlaylist>,
+    selectedUri: String?,
+    onPick: (com.dx.ambient.domain.catalog.CatalogPlaylist) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = label, style = MaterialTheme.typography.titleMedium)
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(items = playlists, key = { it.id }) { playlist ->
+                MediaChip(
+                    text = playlist.title,
+                    selected = selectedUri?.contains(playlist.id) == true,
+                    onClick = { onPick(playlist) },
+                )
+            }
+        }
+    }
+}
+
+/** Generic percent stepper in 5% increments, shared by opacity and scale. */
+@Composable
+private fun PercentStepper(
+    label: String,
+    value: Float,
+    range: ClosedFloatingPointRange<Float>,
+    onChange: (Float) -> Unit,
+) {
+    ToggleRow(label = label) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            PrimaryButton(
+                text = "-",
+                onClick = { onChange(value - 0.05f) },
+                enabled = value > range.start,
+            )
+            Text(
+                text = "${(value * 100).toInt()}%",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            PrimaryButton(
+                text = "+",
+                onClick = { onChange(value + 0.05f) },
+                enabled = value < range.endInclusive,
             )
         }
     }

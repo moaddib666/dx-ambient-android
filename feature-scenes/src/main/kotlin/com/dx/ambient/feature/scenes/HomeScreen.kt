@@ -160,7 +160,10 @@ fun HomeScreen(
             modifier = Modifier.padding(top = 12.dp),
         )
 
-        if (scenes.isEmpty() && sortedFeatured.isEmpty()) {
+        // Hidden scenes stay manageable in edit mode but vanish from normal browsing.
+        val visibleScenes = if (editMode) scenes else scenes.filter { !it.hidden }
+
+        if (visibleScenes.isEmpty() && sortedFeatured.isEmpty()) {
             EmptyState(
                 title = stringResource(R.string.home_empty_title),
                 message = stringResource(R.string.home_empty_message),
@@ -180,7 +183,7 @@ fun HomeScreen(
                 contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp, start = 4.dp, end = 4.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                items(items = scenes, key = { it.id }) { scene ->
+                items(items = visibleScenes, key = { it.id }) { scene ->
                     SceneCard(
                         scene = scene,
                         editMode = editMode,
@@ -188,6 +191,9 @@ fun HomeScreen(
                         onEdit = { onEditScene(scene.id) },
                         onDuplicate = { viewModel.duplicate(scene.id) },
                         onDelete = { viewModel.delete(scene.id) },
+                        onMoveLeft = { viewModel.move(scene.id, -1) },
+                        onMoveRight = { viewModel.move(scene.id, 1) },
+                        onToggleHidden = { viewModel.setHidden(scene.id, !scene.hidden) },
                         modifier = Modifier.width(220.dp),
                     )
                 }
@@ -372,6 +378,9 @@ private fun SceneCard(
     onEdit: () -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
+    onMoveLeft: () -> Unit,
+    onMoveRight: () -> Unit,
+    onToggleHidden: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showActions by remember { mutableStateOf(false) }
@@ -387,7 +396,9 @@ private fun SceneCard(
         // long-presses are wired up explicitly for phones/tablets.
         modifier = modifier
             .fillMaxWidth()
-            .touchClickable(onClick = activate, onLongClick = { showActions = true }),
+            .touchClickable(onClick = activate, onLongClick = { showActions = true })
+            // Hidden scenes appear only in edit mode, dimmed to read as disabled.
+            .alpha(if (scene.hidden) 0.45f else 1f),
         shape = CardDefaults.shape(shape),
         // Semi-transparent "glass" that brightens on focus.
         colors = CardDefaults.colors(
@@ -437,7 +448,11 @@ private fun SceneCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = loopModeLabel(scene),
+                    text = if (scene.hidden) {
+                        stringResource(R.string.home_hidden_badge)
+                    } else {
+                        loopModeLabel(scene)
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.7f),
                     maxLines = 1,
@@ -450,9 +465,13 @@ private fun SceneCard(
     if (showActions) {
         SceneActionsDialog(
             sceneName = scene.name,
+            hidden = scene.hidden,
             onEdit = { showActions = false; onEdit() },
             onDuplicate = { showActions = false; onDuplicate() },
             onDelete = { showActions = false; onDelete() },
+            onMoveLeft = { showActions = false; onMoveLeft() },
+            onMoveRight = { showActions = false; onMoveRight() },
+            onToggleHidden = { showActions = false; onToggleHidden() },
             onDismiss = { showActions = false },
         )
     }
@@ -462,9 +481,13 @@ private fun SceneCard(
 @Composable
 private fun SceneActionsDialog(
     sceneName: String,
+    hidden: Boolean,
     onEdit: () -> Unit,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit,
+    onMoveLeft: () -> Unit,
+    onMoveRight: () -> Unit,
+    onToggleHidden: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Dialog(onDismissRequest = onDismiss) {
@@ -478,6 +501,27 @@ private fun SceneActionsDialog(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(text = sceneName, style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PrimaryButton(
+                    text = stringResource(R.string.home_move_left),
+                    onClick = onMoveLeft,
+                    modifier = Modifier.weight(1f),
+                )
+                PrimaryButton(
+                    text = stringResource(R.string.home_move_right),
+                    onClick = onMoveRight,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            PrimaryButton(
+                text = if (hidden) {
+                    stringResource(R.string.home_show)
+                } else {
+                    stringResource(R.string.home_hide)
+                },
+                onClick = onToggleHidden,
+                modifier = Modifier.fillMaxWidth(),
+            )
             PrimaryButton(
                 text = stringResource(R.string.common_edit),
                 onClick = onEdit,

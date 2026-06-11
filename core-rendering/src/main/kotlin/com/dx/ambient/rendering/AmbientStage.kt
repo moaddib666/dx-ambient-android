@@ -9,11 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
+import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import coil.compose.AsyncImage
 import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
@@ -54,20 +56,35 @@ fun AmbientStage(
     )
 
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
+        // Per-scene video transform: opacity/scale apply only to the picture layer;
+        // mask and scrim layers above are untouched.
+        val videoTransform = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                alpha = scene.videoAlpha.coerceIn(0f, 1f)
+                scaleX = scene.videoScale
+                scaleY = scene.videoScale
+            }
         when (scene.videoSource.type) {
             MediaSourceType.LOCAL_IMAGE -> {
                 AsyncImage(
                     model = scene.videoSource.uri,
                     contentDescription = scene.name,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = videoTransform,
                 )
             }
-            MediaSourceType.LOCAL_VIDEO -> {
+            MediaSourceType.LOCAL_VIDEO, MediaSourceType.STREAM -> {
                 PlayerSurface(
                     player = player.videoPlayer as Player,
-                    surfaceType = SURFACE_TYPE_SURFACE_VIEW,
-                    modifier = Modifier.fillMaxSize(),
+                    // SurfaceView ignores Compose alpha/scale (it punches a hole behind the
+                    // window), so transformed scenes render through a TextureView instead.
+                    surfaceType = if (scene.videoAlpha < 1f || scene.videoScale != 1f) {
+                        SURFACE_TYPE_TEXTURE_VIEW
+                    } else {
+                        SURFACE_TYPE_SURFACE_VIEW
+                    },
+                    modifier = videoTransform,
                 )
             }
             else -> {

@@ -3,11 +3,14 @@ package com.dx.ambient.feature.scenes
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dx.ambient.domain.catalog.CatalogPlaylist
+import com.dx.ambient.domain.catalog.YouTubeCatalog
 import com.dx.ambient.domain.model.LibraryMedia
 import com.dx.ambient.domain.model.LoopMode
 import com.dx.ambient.domain.model.Mask
 import com.dx.ambient.domain.model.MediaKind
 import com.dx.ambient.domain.model.MediaSource
+import com.dx.ambient.domain.model.MediaSourceType
 import com.dx.ambient.domain.model.Scene
 import com.dx.ambient.domain.repository.MediaLibraryRepository
 import com.dx.ambient.domain.repository.SceneRepository
@@ -38,6 +41,7 @@ class SceneEditorViewModel @Inject constructor(
     private val sceneRepository: SceneRepository,
     mediaLibraryRepository: MediaLibraryRepository,
     private val saveScene: SaveSceneUseCase,
+    private val youTubeCatalog: YouTubeCatalog,
     /** Drives the live mask preview: the draft plays full-screen with the mask overlaid. */
     val player: AmbientPlayer,
 ) : ViewModel() {
@@ -72,6 +76,25 @@ class SceneEditorViewModel @Inject constructor(
                 initialValue = defaultMasks,
             )
 
+    /** True when YouTube sources can be offered (configured + silently signed in). */
+    private val _youTubeAvailable = MutableStateFlow(false)
+    val youTubeAvailable: StateFlow<Boolean> = _youTubeAvailable.asStateFlow()
+
+    /** The signed-in user's playlists, loaded once YouTube availability is confirmed. */
+    private val _myPlaylists = MutableStateFlow<List<CatalogPlaylist>>(emptyList())
+    val myPlaylists: StateFlow<List<CatalogPlaylist>> = _myPlaylists.asStateFlow()
+
+    /** Playlists bundled with the app, always offered alongside the user's own. */
+    val builtInPlaylists: List<CatalogPlaylist> = youTubeCatalog.builtInPlaylists()
+
+    init {
+        viewModelScope.launch {
+            val available = youTubeCatalog.isAvailable()
+            _youTubeAvailable.value = available
+            if (available) _myPlaylists.value = youTubeCatalog.myPlaylists()
+        }
+    }
+
     private val _draft = MutableStateFlow(Scene(id = "", name = defaultSceneName()))
 
     /** The scene currently being authored. */
@@ -103,6 +126,52 @@ class SceneEditorViewModel @Inject constructor(
     /** Pick the picture source (MVP feature 4). */
     fun pickVideo(media: LibraryMedia) {
         _draft.value = _draft.value.copy(videoSource = media.toMediaSource())
+    }
+
+    /** Pick a YouTube playlist (the user's own or built-in) as the picture source. */
+    fun pickYouTubePlaylist(playlist: CatalogPlaylist) {
+        _draft.value = _draft.value.copy(videoSource = youTubeCatalog.playlistSource(playlist))
+    }
+
+    /**
+     * Use a pasted link as the picture source: a YouTube video/playlist link becomes a
+     * YOUTUBE source; any other http(s) URL becomes a direct STREAM source.
+     * Returns false (and changes nothing) when the input is neither.
+     */
+    fun setVideoLink(input: String): Boolean {
+        val source = parseLink(input) ?: return false
+        _draft.value = _draft.value.copy(videoSource = source)
+        return true
+    }
+
+    /**
+     * Use a remote stream URL as the separate soundtrack (e.g. internet radio).
+     * YouTube links are rejected — audio-only YouTube playback would violate the
+     * IFrame-only policy. Returns false when the input isn't a plain http(s) URL.
+     */
+    fun setAudioStream(input: String): Boolean {
+        val trimmed = input.trim()
+        if (youTubeCatalog.parseLink(trimmed) != null) return false
+        if (!trimmed.isHttpUrl()) return false
+        _draft.value = _draft.value.copy(
+            audioSource = MediaSource(
+                uri = trimmed,
+                type = MediaSourceType.STREAM,
+                displayName = trimmed.toDisplayHost(),
+            ),
+        )
+        return true
+    }
+
+    private fun parseLink(input: String): MediaSource? {
+        val trimmed = input.trim()
+        youTubeCatalog.parseLink(trimmed)?.let { return it }
+        if (!trimmed.isHttpUrl()) return null
+        return MediaSource(
+            uri = trimmed,
+            type = MediaSourceType.STREAM,
+            displayName = trimmed.toDisplayHost(),
+        )
     }
 
     /** Pick a separate audio source. */
@@ -155,6 +224,16 @@ class SceneEditorViewModel @Inject constructor(
     /** Set output brightness, clamped to a valid 0f..1f multiplier. */
     fun setBrightness(value: Float) {
         _draft.value = _draft.value.copy(brightness = value.coerceIn(0f, 1f))
+    }
+
+    /** Set the video layer opacity (independent of brightness), clamped to 0f..1f. */
+    fun setVideoAlpha(value: Float) {
+        _draft.value = _draft.value.copy(videoAlpha = value.coerceIn(0f, 1f))
+    }
+
+    /** Set the video layer scale factor, clamped to a sane 0.5x..2x range. */
+    fun setVideoScale(value: Float) {
+        _draft.value = _draft.value.copy(videoScale = value.coerceIn(0.5f, 2f))
     }
 
     /** Cycle to the next [LoopMode]. */
@@ -219,3 +298,10 @@ class SceneEditorViewModel @Inject constructor(
             }
     }.getOrDefault(emptyList())
 }
+
+private fun String.isHttpUrl(): Boolean =
+    startsWith("http://", ignoreCase = true) || startsWith("https://", ignoreCase = true)
+
+/** Compact label for a stream URL chip: the host, or the URL itself as a fallback. */
+private fun String.toDisplayHost(): String =
+    runCatching { java.net.URI(this).host }.getOrNull() ?: this

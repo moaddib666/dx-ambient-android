@@ -89,15 +89,18 @@ class AmbientPlayer @Inject constructor(
 
     override fun load(scene: Scene) {
         ensurePlayers()
+        // Local files and direct remote streams both go through ExoPlayer.
+        // YouTube sources never reach this player (IFrame-only policy).
         val videoItems = scene.fullVideoPlaylist
-            .filter { it.type == MediaSourceType.LOCAL_VIDEO }
+            .filter { it.type == MediaSourceType.LOCAL_VIDEO || it.type == MediaSourceType.STREAM }
             .map { MediaItem.fromUri(it.uri) }
 
         video.applyRepeatMode(scene.loopMode)
         video.shuffleModeEnabled = scene.loopMode == LoopMode.SHUFFLE_PLAYLIST
         video.setMediaItems(videoItems)
 
-        hasSeparateAudio = scene.audioSource.type == MediaSourceType.LOCAL_AUDIO
+        hasSeparateAudio = scene.audioSource.type == MediaSourceType.LOCAL_AUDIO ||
+            scene.audioSource.type == MediaSourceType.STREAM
         if (hasSeparateAudio) {
             audio.setMediaItem(MediaItem.fromUri(scene.audioSource.uri))
             audio.repeatMode = Player.REPEAT_MODE_ALL

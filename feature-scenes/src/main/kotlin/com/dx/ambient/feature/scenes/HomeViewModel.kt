@@ -49,6 +49,35 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Moves a scene one position left/right in the home row (edit mode). The whole
+     * list's [Scene.sortOrder] is renumbered to the new visual order, which also
+     * resolves legacy ties where every scene still carries the default order 0.
+     */
+    fun move(id: String, direction: Int) {
+        viewModelScope.launch {
+            val list = state.value.toMutableList()
+            val from = list.indexOfFirst { it.id == id }
+            if (from < 0) return@launch
+            val to = from + direction
+            if (to !in list.indices) return@launch
+            list[from] = list[to].also { list[to] = list[from] }
+            list.forEachIndexed { index, scene ->
+                if (scene.sortOrder != index) {
+                    sceneRepository.upsertScene(scene.copy(sortOrder = index))
+                }
+            }
+        }
+    }
+
+    /** Temporarily hides (or restores) a scene from the home row and scene switching. */
+    fun setHidden(id: String, hidden: Boolean) {
+        viewModelScope.launch {
+            val scene = sceneRepository.getScene(id) ?: return@launch
+            sceneRepository.upsertScene(scene.copy(hidden = hidden))
+        }
+    }
+
     /** Clone an existing scene into a fresh, independent copy (MVP feature 7). */
     fun duplicate(id: String) {
         viewModelScope.launch {

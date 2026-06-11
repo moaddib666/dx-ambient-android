@@ -53,7 +53,11 @@ class PlayerViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            sceneRepository.observeScenes().collectLatest { orderedScenes = it }
+            sceneRepository.observeScenes().collectLatest { scenes ->
+                // Hidden scenes are excluded from D-pad switching; YouTube-sourced scenes
+                // play through the IFrame route, not this player, so they are skipped too.
+                orderedScenes = scenes.filter { !it.hidden && !it.videoSource.isYouTube }
+            }
         }
     }
 

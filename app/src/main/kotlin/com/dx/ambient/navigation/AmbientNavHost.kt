@@ -17,7 +17,6 @@ import com.dx.ambient.boot.BootViewModel
 import com.dx.ambient.feature.library.LibraryScreen
 import com.dx.ambient.feature.scenes.FeaturedTile
 import com.dx.ambient.feature.scenes.HomeScreen
-import com.dx.ambient.feature.scenes.PlayerScreen
 import com.dx.ambient.feature.scenes.SceneEditorScreen
 import com.dx.ambient.feature.settings.DeviceInfoScreen
 import com.dx.ambient.feature.settings.SettingsScreen
@@ -135,7 +134,9 @@ fun AmbientNavHost() {
             arguments = listOf(navArgument(Routes.ARG_SCENE_ID) { type = NavType.StringType }),
         ) { entry ->
             val sceneId = entry.arguments?.getString(Routes.ARG_SCENE_ID).orEmpty()
-            PlayerScreen(sceneId = sceneId, onExit = { navController.popBackStack() })
+            // Routes YouTube-sourced scenes to the IFrame player, everything else to
+            // the regular ExoPlayer screen.
+            ScenePlayerRoute(sceneId = sceneId, onExit = { navController.popBackStack() })
         }
 
         composable(Routes.EDITOR_NEW) {

@@ -35,7 +35,19 @@ data class Scene(
     /** Output brightness/dim multiplier, 0f (black) .. 1f (full). Projector-safe default below 1. */
     val brightness: Float = DEFAULT_BRIGHTNESS,
 
+    /**
+     * Opacity of the video layer only, 0f..1f. Unlike [brightness] (a scrim over the whole
+     * stage, mask included) this fades just the picture, keeping the mask fully lit.
+     */
+    val videoAlpha: Float = 1f,
+
+    /** Scale factor of the video layer (1f = fit the screen). The mask is not scaled. */
+    val videoScale: Float = 1f,
+
     val loopMode: LoopMode = LoopMode.LOOP_ONE,
+
+    /** Temporarily excluded from the home row and scene switching; editable in edit mode. */
+    val hidden: Boolean = false,
 
     /** True when audio playback is muted regardless of the chosen audio source. */
     val muted: Boolean = false,
@@ -61,7 +73,7 @@ data class Scene(
 
     /** True when this scene needs the heavier composited render path rather than SurfaceView. */
     val requiresCompositedRendering: Boolean
-        get() = hasMask || brightness < 1f
+        get() = hasMask || brightness < 1f || videoAlpha < 1f || videoScale != 1f
 
     companion object {
         const val DEFAULT_BRIGHTNESS = 0.85f
