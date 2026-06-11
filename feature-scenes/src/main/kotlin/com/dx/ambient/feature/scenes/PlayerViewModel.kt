@@ -107,11 +107,22 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /** Pause (without tearing down) when the app goes to the background. */
+    fun onBackground() {
+        player.pause()
+    }
+
     /** Stop playback when leaving the player. Never releases the singleton player. */
     fun onStop() {
         sleepTimerJob?.cancel()
         autoDimJob?.cancel()
         player.stop()
+    }
+
+    // Safety net for every exit path that skips the explicit BACK handler
+    // (navigation pop, activity destruction): timers must not outlive the screen.
+    override fun onCleared() {
+        onStop()
     }
 
     private fun armSleepTimer(minutes: Int) {

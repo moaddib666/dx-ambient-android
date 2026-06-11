@@ -38,37 +38,57 @@ class AmbientPlayer @Inject constructor(
     /** Exposed so the rendering layer can attach a Surface to it. */
     val videoPlayer: Player get() = video
 
-    private val video: ExoPlayer = buildPlayer(handleAudioFocus = true)
-    private val audio: ExoPlayer = buildPlayer(handleAudioFocus = false)
+    private var video: ExoPlayer = buildPlayer(handleAudioFocus = true)
+    private var audio: ExoPlayer = buildPlayer(handleAudioFocus = false)
+    private var released = false
 
     private val _state = MutableStateFlow(PlaybackState())
     override val state: StateFlow<PlaybackState> = _state.asStateFlow()
 
     private var hasSeparateAudio = false
 
+    private val videoListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) = syncStatus()
+        override fun onIsPlayingChanged(isPlaying: Boolean) = syncStatus()
+        override fun onPlayerError(error: PlaybackException) {
+            _state.value = _state.value.copy(
+                status = PlaybackStatus.ERROR,
+                errorMessage = error.errorCodeName,
+            )
+        }
+    }
+
+    // Surface separate-soundtrack failures too (e.g. fireplace video + rain audio).
+    private val audioListener = object : Player.Listener {
+        override fun onPlayerError(error: PlaybackException) {
+            _state.value = _state.value.copy(
+                status = PlaybackStatus.ERROR,
+                errorMessage = "audio: ${error.errorCodeName}",
+            )
+        }
+    }
+
     init {
-        video.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) = syncStatus()
-            override fun onIsPlayingChanged(isPlaying: Boolean) = syncStatus()
-            override fun onPlayerError(error: PlaybackException) {
-                _state.value = _state.value.copy(
-                    status = PlaybackStatus.ERROR,
-                    errorMessage = error.errorCodeName,
-                )
-            }
-        })
-        // Surface separate-soundtrack failures too (e.g. fireplace video + rain audio).
-        audio.addListener(object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                _state.value = _state.value.copy(
-                    status = PlaybackStatus.ERROR,
-                    errorMessage = "audio: ${error.errorCodeName}",
-                )
-            }
-        })
+        attachListeners()
+    }
+
+    private fun attachListeners() {
+        video.addListener(videoListener)
+        audio.addListener(audioListener)
+    }
+
+    // The instance is a singleton but the underlying ExoPlayers hold codecs, so
+    // they are released when the activity finishes and rebuilt on the next load.
+    private fun ensurePlayers() {
+        if (!released) return
+        video = buildPlayer(handleAudioFocus = true)
+        audio = buildPlayer(handleAudioFocus = false)
+        attachListeners()
+        released = false
     }
 
     override fun load(scene: Scene) {
+        ensurePlayers()
         val videoItems = scene.fullVideoPlaylist
             .filter { it.type == MediaSourceType.LOCAL_VIDEO }
             .map { MediaItem.fromUri(it.uri) }
@@ -125,8 +145,11 @@ class AmbientPlayer @Inject constructor(
     }
 
     override fun release() {
+        if (released) return
         video.release()
         audio.release()
+        released = true
+        _state.value = PlaybackState()
     }
 
     private fun applyVolume(muted: Boolean) {
