@@ -1,0 +1,27 @@
+DX Ambient turns your Android TV, Google TV, or projector into a calm, always-on ambient display. Loop your own videos and audio, soften them with overlay masks, dim them to projector-safe brightness, and save the result as a reusable scene you can launch with a single click of the remote.
+
+Built for the big screen and the remote — not a phone app stretched to fit. Every screen is D-pad friendly, with large focus targets and a dark, glare-free interface designed to sit in the background of a room.
+
+LOCAL-FIRST BY DESIGN
+Your media stays yours. DX Ambient plays video and audio straight from your device, a USB drive, or a local folder using the Storage Access Framework. No account, no sign-up, no cloud upload. The app ships with ready-to-play demo scenes so it looks great the moment you open it.
+
+WHAT YOU CAN DO
+• Loop local video and audio as a seamless ambient backdrop
+• Build scenes from a video, an audio track, an overlay mask, brightness and loop mode
+• Apply PNG/WebP alpha masks — vignettes, letterbox, spotlight and your own
+• Dim to projector-safe brightness with an adjustable scrim
+• Set sleep timers and auto-dim so a scene winds down on its own
+• Import media from local storage or USB via the system file picker
+• Save and re-launch scenes instantly from the home grid
+• Read your device's playback capabilities at a glance
+
+PRIVATE AND LIGHTWEIGHT
+DX Ambient collects no personal data and shows no ads. The core experience needs no internet connection at all. An optional YouTube mode is fully isolated and uses only the official YouTube IFrame player — there is no audio extraction and no background playback.
+
+PERFECT FOR
+• Living-room ambiance and projector setups
+• Fireplaces, aquariums, space and nature loops
+• Focus, study and relaxation backdrops
+• Parties, cafes and waiting areas
+
+Bring your own scenes, set the mood, and let the room glow.

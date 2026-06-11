@@ -1,0 +1,8 @@
+DX Ambient 1.1.0
+
+• New bundled scene: Space Odyssey
+• Switch scenes directly with the D-pad while playing
+• Touch-friendly controls on phones and tablets alongside the TV remote
+• Local-first ambient scenes: loop your own video and audio with masks, projector-safe dimming, sleep timer and auto-dim
+• Import media from local storage or USB
+• Optional, isolated YouTube mode (official IFrame player)
