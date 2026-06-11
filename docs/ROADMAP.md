@@ -29,9 +29,9 @@ flowchart LR
 
 ## M2 — On-device QA (nothing has run on real hardware yet)
 
-The README is explicit that UI behaviour, SAF/USB import, and the WebView path are unverified on device. Run on at least one real Android/Google TV device and one phone:
+Verified on the Android TV 1080p emulator (2026-06-11): cold boot → resume-on-launch into the last scene, home grid + D-pad focus traversal, both bundled scenes playing, D-pad left/right scene switching, background → pause → manual resume (lifecycle fix confirmed live), YouTube sign-in wall launching the real Google sign-in, clean logcat (no crashes). Still needs real hardware for the rest:
 
-- [ ] Scene playback: both bundled scenes (Digital Campfire playlist, Space Odyssey loop), loop modes, separate-audio muting, mask overlay, brightness scrim, 900ms reveal fade.
+- [ ] Scene playback details on a physical device: loop modes, separate-audio muting, mask overlay, brightness scrim, 900ms reveal fade.
 - [ ] SAF import from internal storage and a USB drive; permission persistence across reboot; revoked-permission behaviour (currently fails silently — see M5).
 - [ ] Sleep timer and auto-dim end-to-end, including overnight soak test on a projector (thermals, OOM, surface loss after HDMI sleep/wake).
 - [ ] D-pad traversal of every screen plus the new touch bridge on a phone; overscan padding on TV.
