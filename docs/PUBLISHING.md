@@ -79,6 +79,32 @@ Edit these files, run `./gradlew publishListing`, done. Per-track release notes 
 
 > Note: the first artifact upload, Data Safety form, content rating, and TV form-factor opt-in are one-time console actions; everything after that (new builds, listing edits, promotions, release notes) flows through Gradle.
 
+## Android TV form-factor tracks
+
+Play manages Android TV releases on **separate TV-only tracks** (`tv:internal`, `tv:TV`
+— the TV closed-testing track, `tv:beta`, `tv:production`). Two gotchas:
+
+1. Gradle Play Publisher **cannot target these tracks** — publishing to `internal`/`alpha`
+   updates phones and tablets only, which is how TV once sat on 1.0.0 while mobile moved on.
+2. TV tracks only accept artifacts that **require** `android.software.leanback`. The
+   universal bundle declares leanback as optional (so one artifact serves phones AND TV),
+   which the TV tracks reject.
+
+Hence the `device` flavor dimension in `app/build.gradle.kts`: `mobile` is the universal
+bundle GPP publishes as before, `tv` flips leanback to required (`app/src/tv/AndroidManifest.xml`)
+and carries its own **manually bumped** `versionCode` (the TV script does no auto-resolution).
+
+TV release flow, after the normal mobile publish:
+
+```bash
+# 1. bump the tv flavor's versionCode in app/build.gradle.kts (must be unique app-wide)
+./gradlew :app:bundleTvRelease
+python3 scripts/publish_tv_tracks.py            # updates tv:internal + tv:TV
+```
+
+The script uses the same `play-service-account.json`, uploads the TV bundle, points the
+TV tracks at it with the shared release notes, and never sends review-bypass flags.
+
 ## Production access (personal account policy)
 
 This developer account is subject to Google's closed-testing requirement for personal accounts: production and open testing stay locked until a closed test (alpha track) has run with **at least 12 opted-in testers for 14 consecutive days**, after which **Apply for production** on the Console dashboard becomes available. Until then `promoteReleaseArtifact --promote-track production` (or `beta`) returns `FAILED_PRECONDITION` — that is the policy gate, not a config error. Internal and alpha publishing work fully from Gradle.

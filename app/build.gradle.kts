@@ -59,6 +59,26 @@ android {
         }
     }
 
+    // Two artifacts from one codebase: `mobile` is the universal bundle (leanback optional —
+    // phones, tablets AND TV) that Gradle Play Publisher pushes to the regular tracks.
+    // `tv` additionally REQUIRES android.software.leanback (manifest overlay in src/tv),
+    // which Play's TV form-factor tracks (`tv:internal`, `tv:TV`, …) demand of every
+    // artifact — those tracks are updated by scripts/publish_tv_tracks.py.
+    flavorDimensions += "device"
+    productFlavors {
+        create("mobile") {
+            dimension = "device"
+            isDefault = true
+        }
+        create("tv") {
+            dimension = "device"
+            // Explicit, manually bumped code: the TV publishing script does not
+            // auto-resolve versionCodes. Must stay unique app-wide (above the
+            // mobile track's latest auto-resolved code) and grow every TV release.
+            versionCode = 14
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -89,6 +109,14 @@ android {
         jvmTarget = "17"
     }
     ndkVersion = "27.1.12297006"
+
+    // Gradle Play Publisher must not push the TV flavor to the regular tracks — the TV
+    // artifact goes to the TV form-factor tracks via scripts/publish_tv_tracks.py.
+    playConfigs {
+        register("tv") {
+            enabled.set(false)
+        }
+    }
 }
 
 // Gradle Play Publisher — publishes the AAB, store listing, graphics and release
