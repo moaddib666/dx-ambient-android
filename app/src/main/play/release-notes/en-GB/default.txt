@@ -1,6 +1,7 @@
-DX Ambient 1.7.0
+DX Ambient 1.8.0
 
-• New scene type: Slideshow — your photos with cross-fade or Ken Burns drift, slide timing and shuffle
+• The screen stays awake during playback — no more lock mid-scene on phones and tablets
+• Pausing now shows a designed overlay over an ambient backdrop instead of a black screen
+• Touch gestures now mirror the remote 1:1: tap = play/pause, swipe sideways = switch scene, swipe up/down = change mask, Back = exit
+• New scene type: Slideshow with cross-fade or Ken Burns drift
 • New bundled scene: DX World — 110 Dimension-X vistas with the original score
-• Scene editor reworked into per-type forms (local video / YouTube / slideshow) with shared audio, mask and appearance controls
-• Fixed: image and audio-only scenes no longer stay behind the black reveal cover

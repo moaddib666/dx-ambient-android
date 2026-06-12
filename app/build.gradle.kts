@@ -38,7 +38,7 @@ android {
         minSdk = 23
         targetSdk = 35
         versionCode = 2 // floor only — Play Publisher auto-resolves the next free code at upload
-        versionName = "1.7.0"
+        versionName = "1.8.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
