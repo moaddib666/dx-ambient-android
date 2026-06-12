@@ -66,6 +66,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.dx.ambient.rendering.R
+import com.dx.ambient.rendering.components.KeepScreenOn
 import com.dx.ambient.rendering.components.PlayerLoadingOverlay
 import com.dx.ambient.rendering.components.PlayerPauseOverlay
 import com.dx.ambient.rendering.components.PrimaryButton
@@ -185,6 +186,9 @@ fun YouTubeIFrameScreen(
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
+    // Ambient playback runs for hours without input — never let the device dim/lock here.
+    KeepScreenOn()
+
     Box(
         modifier =
             modifier
@@ -275,9 +279,9 @@ fun YouTubeIFrameScreen(
                     addJavascriptInterface(bridge, "AndroidYT")
 
                     // The WebView itself is inert: every touch is consumed here so YouTube
-                    // can NEVER show its own UI from a tap. Gestures mirror scene playback:
+                    // can NEVER show its own UI from a tap. Gestures mirror the remote 1:1:
                     // clean tap = play/pause, horizontal swipe = previous/next scene,
-                    // vertical swipe = collapse/exit.
+                    // vertical swipe = mask tuning; BACK exits.
                     isFocusable = false
                     isFocusableInTouchMode = false
                     var downX = 0f
@@ -299,7 +303,7 @@ fun YouTubeIFrameScreen(
                                         onSwitchScene?.invoke(if (dx < 0) 1 else -1)
                                     kotlin.math.abs(dy) >= 120 * density &&
                                         kotlin.math.abs(dy) > kotlin.math.abs(dx) ->
-                                        onExit()
+                                        onCycleMask?.invoke(if (dy > 0) 1 else -1)
                                     kotlin.math.abs(dx) <= slop && kotlin.math.abs(dy) <= slop ->
                                         (v as WebView).evaluateJavascript(TOGGLE_JS, null)
                                 }
@@ -385,7 +389,6 @@ fun YouTubeIFrameScreen(
             paused -> PlayerPauseOverlay(
                 sceneName = sceneTitle,
                 maskName = maskName,
-                opaque = true,
                 maskUri = maskUri,
             )
             // Loading/buffering/transitioning: ambient backdrop with a pulsing loader.

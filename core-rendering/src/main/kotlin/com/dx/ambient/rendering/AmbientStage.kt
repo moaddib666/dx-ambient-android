@@ -50,8 +50,10 @@ fun AmbientStage(
 
     // Boot/scene-change fade: hold black until the picture is actually playing, then cross-fade
     // the scene in. Combined with the black launch splash this gives a seamless "black → scene".
-    val revealed = state.status == PlaybackStatus.PLAYING
+    // PAUSED keeps the stage revealed — pausing must show the paused frame (with the pause
+    // overlay on top), not fade the whole picture back to black.
     val paused = state.status == PlaybackStatus.PAUSED
+    val revealed = state.status == PlaybackStatus.PLAYING || paused
     val coverAlpha by animateFloatAsState(
         targetValue = if (revealed) 0f else 1f,
         animationSpec = tween(durationMillis = 900),

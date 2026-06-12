@@ -28,7 +28,7 @@
     <string name="onboarding_title">Willkommen bei DX Ambient</string>
     <string name="onboarding_line_play">Wähle eine Szenenkarte mit OK, um sie abzuspielen — dein Raum wird zur Szene.</string>
     <string name="onboarding_line_edit">Drücke „Bearbeiten“ in der oberen Leiste und wähle dann eine Karte, um sie zu bearbeiten (auf Touchscreens auch per langem Drücken).</string>
-    <string name="onboarding_line_controls">Während der Wiedergabe: links/rechts wechselt Szenen, OK pausiert, BACK oder Wischen nach unten führt hierher zurück.</string>
+    <string name="onboarding_line_controls">Während der Wiedergabe: ◀ ▶ oder seitliches Wischen wechselt die Szene, OK oder Tippen pausiert, ▲ ▼ oder vertikales Wischen wechselt die Maske, BACK führt hierher zurück.</string>
     <string name="onboarding_line_featured">Empfohlene Playlists streamen über YouTube — sie brauchen Internet und eine YouTube-Anmeldung.</string>
     <string name="onboarding_line_masks">Masken rahmen dein Video ein: Wähle eine im Szenen-Editor und sieh dir die Vorschau live an.</string>
     <string name="onboarding_got_it">Verstanden</string>
@@ -171,5 +171,6 @@
 
     <string name="player_paused">Pausiert</string>
     <string name="player_pause_hint">OK Wiedergabe/Pause · ◀ ▶ Szene · ▲ ▼ Maske · BACK Beenden</string>
+    <string name="player_pause_hint_touch">Tippen Wiedergabe/Pause · Wischen ◀ ▶ Szene · Wischen ▲ ▼ Maske · Zurück beenden</string>
     <string name="player_mask_format">Maske: %1$s</string>
 </resources>

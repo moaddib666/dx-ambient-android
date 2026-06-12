@@ -28,7 +28,7 @@
     <string name="onboarding_title">Вітаємо в DX Ambient</string>
     <string name="onboarding_line_play">Виберіть картку сцени кнопкою OK, щоб відтворити її — ваша кімната стане сценою.</string>
     <string name="onboarding_line_edit">Натисніть «Редагувати» на верхній панелі, потім виберіть картку, щоб змінити її (на сенсорних екранах можна також утримувати).</string>
-    <string name="onboarding_line_controls">Під час відтворення: вліво/вправо — перемикання сцен, OK — пауза, BACK або свайп вниз — повернення сюди.</string>
+    <string name="onboarding_line_controls">Під час відтворення: ◀ ▶ або свайп убік — зміна сцени, OK або дотик — пауза, ▲ ▼ або свайп угору/вниз — зміна маски, BACK — повернення сюди.</string>
     <string name="onboarding_line_featured">Рекомендовані плейлисти відтворюються через YouTube — потрібні інтернет і вхід у YouTube.</string>
     <string name="onboarding_line_masks">Маски обрамляють відео: виберіть одну в редакторі сцен і переглядайте наживо.</string>
     <string name="onboarding_got_it">Зрозуміло</string>
@@ -173,5 +173,6 @@
 
     <string name="player_paused">Пауза</string>
     <string name="player_pause_hint">OK відтворення/пауза · ◀ ▶ сцена · ▲ ▼ маска · BACK вихід</string>
+    <string name="player_pause_hint_touch">Дотик — відтворення/пауза · свайп ◀ ▶ — сцена · свайп ▲ ▼ — маска · Назад — вихід</string>
     <string name="player_mask_format">Маска: %1$s</string>
 </resources>

@@ -39,7 +39,7 @@
     <string name="onboarding_title">Welcome to DX Ambient</string>
     <string name="onboarding_line_play">Select a scene card with OK to play it — your room becomes the scene.</string>
     <string name="onboarding_line_edit">Press Edit in the top bar, then select a card to edit it (on touch screens you can also long-press).</string>
-    <string name="onboarding_line_controls">While playing: left/right switches scenes, OK pauses, BACK or swipe down returns here.</string>
+    <string name="onboarding_line_controls">While playing: ◀ ▶ or a sideways swipe switches scenes, OK or a tap pauses, ▲ ▼ or a vertical swipe changes the mask, BACK returns here.</string>
     <string name="onboarding_line_featured">Featured playlists stream via YouTube — they need internet and a YouTube sign-in.</string>
     <string name="onboarding_line_masks">Masks frame your video: pick one in the scene editor and preview it live.</string>
     <string name="onboarding_got_it">Got it</string>
@@ -204,5 +204,6 @@
     <!-- Player pause/loading overlay -->
     <string name="player_paused">Paused</string>
     <string name="player_pause_hint">OK play/pause · ◀ ▶ scene · ▲ ▼ mask · BACK exit</string>
+    <string name="player_pause_hint_touch">Tap play/pause · swipe ◀ ▶ scene · swipe ▲ ▼ mask · Back exit</string>
     <string name="player_mask_format">Mask: %1$s</string>
 </resources>

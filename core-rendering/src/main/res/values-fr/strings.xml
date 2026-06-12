@@ -28,7 +28,7 @@
     <string name="onboarding_title">Bienvenue dans DX Ambient</string>
     <string name="onboarding_line_play">Sélectionnez une carte de scène avec OK pour la lire — votre pièce devient la scène.</string>
     <string name="onboarding_line_edit">Appuyez sur Modifier dans la barre du haut, puis sélectionnez une carte pour la modifier (sur écran tactile, vous pouvez aussi faire un appui long).</string>
-    <string name="onboarding_line_controls">Pendant la lecture : gauche/droite change de scène, OK met en pause, BACK ou un balayage vers le bas revient ici.</string>
+    <string name="onboarding_line_controls">Pendant la lecture : ◀ ▶ ou un balayage latéral change de scène, OK ou un appui met en pause, ▲ ▼ ou un balayage vertical change le masque, BACK revient ici.</string>
     <string name="onboarding_line_featured">Les playlists à la une sont diffusées via YouTube — il faut internet et une connexion YouTube.</string>
     <string name="onboarding_line_masks">Les masques encadrent votre vidéo : choisissez-en un dans l\'éditeur de scène et prévisualisez-le en direct.</string>
     <string name="onboarding_got_it">Compris</string>
@@ -171,5 +171,6 @@
 
     <string name="player_paused">En pause</string>
     <string name="player_pause_hint">OK lecture/pause · ◀ ▶ scène · ▲ ▼ masque · BACK quitter</string>
+    <string name="player_pause_hint_touch">Touchez lecture/pause · balayez ◀ ▶ scène · balayez ▲ ▼ masque · Retour quitter</string>
     <string name="player_mask_format">Masque : %1$s</string>
 </resources>

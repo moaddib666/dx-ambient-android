@@ -5,7 +5,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,30 +27,24 @@ import com.dx.ambient.rendering.R
 /**
  * Shared pause overlay for ambient playback (regular scenes and the YouTube player).
  *
- * Projector-friendly by design: never a dead black screen. In [opaque] mode it paints a full
- * [AmbientBackground] (used over the YouTube embed, whose own pause UI must stay hidden);
- * otherwise a translucent dim leaves the paused frame visible beneath. Both variants show
- * the scene identity, the live-switchable mask, and the remote control hints.
+ * Projector-friendly by design: never a dead black screen — it paints a full
+ * [AmbientBackground] (a randomly picked ambient image, the same backdrop the menu
+ * screens use) with the scene identity, the live-switchable mask, and control hints
+ * matched to the input mode (remote keys on TV, gestures on touch devices).
  */
 @Composable
 fun PlayerPauseOverlay(
     sceneName: String?,
     maskName: String?,
-    opaque: Boolean,
     modifier: Modifier = Modifier,
     /**
      * Current scene mask, composited over the backdrop so live ▲ ▼ mask tuning is
-     * previewed even while paused. Pass when the overlay hides the real mask layer
-     * (the opaque YouTube variant); the translucent variant shows the stage's own mask.
+     * previewed even while paused.
      */
     maskUri: String? = null,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        if (opaque) {
-            AmbientBackground()
-        } else {
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
-        }
+        AmbientBackground()
         if (maskUri != null) {
             AsyncImage(
                 model = maskUri,
@@ -149,7 +142,11 @@ private fun OverlayTextBlock(
         }
         if (showHints) {
             Text(
-                text = stringResource(R.string.player_pause_hint),
+                text = if (isTvDevice()) {
+                    stringResource(R.string.player_pause_hint)
+                } else {
+                    stringResource(R.string.player_pause_hint_touch)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White.copy(alpha = 0.55f),
             )

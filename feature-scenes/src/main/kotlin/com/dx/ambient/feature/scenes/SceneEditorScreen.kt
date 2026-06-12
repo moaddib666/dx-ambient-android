@@ -60,6 +60,7 @@ import com.dx.ambient.domain.model.SlideTransition
 import com.dx.ambient.domain.model.SlideshowConfig
 import com.dx.ambient.rendering.AmbientStage
 import com.dx.ambient.rendering.R
+import com.dx.ambient.rendering.components.KeepScreenOn
 import com.dx.ambient.rendering.components.PrimaryButton
 import com.dx.ambient.rendering.components.SectionHeader
 import com.dx.ambient.rendering.components.isTvDevice
@@ -340,6 +341,9 @@ private fun MaskPreviewOverlay(
 ) {
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
+    // The live preview plays media — don't let the device dim/lock while it's open.
+    KeepScreenOn()
 
     // Play on entry, stop when the overlay leaves composition for any reason.
     DisposableEffect(Unit) {

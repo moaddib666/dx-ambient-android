@@ -28,7 +28,7 @@
     <string name="onboarding_title">DX Ambient へようこそ</string>
     <string name="onboarding_line_play">OK ボタンでシーンカードを選ぶと再生されます — 部屋がそのままシーンになります。</string>
     <string name="onboarding_line_edit">上部バーの「編集」を押してからカードを選ぶと編集できます（タッチ画面では長押しも可能）。</string>
-    <string name="onboarding_line_controls">再生中: 左/右でシーン切り替え、OK で一時停止、BACK か下スワイプでここに戻ります。</string>
+    <string name="onboarding_line_controls">再生中：◀ ▶ または横スワイプでシーン切り替え、OK またはタップで一時停止、▲ ▼ または縦スワイプでマスク切り替え、BACK でここに戻ります。</string>
     <string name="onboarding_line_featured">おすすめプレイリストは YouTube 経由で再生されます — インターネットと YouTube ログインが必要です。</string>
     <string name="onboarding_line_masks">マスクは動画を縁取ります: シーンエディタで選んでライブプレビューできます。</string>
     <string name="onboarding_got_it">OK</string>
@@ -170,5 +170,6 @@
 
     <string name="player_paused">一時停止中</string>
     <string name="player_pause_hint">OK 再生/一時停止 · ◀ ▶ シーン · ▲ ▼ マスク · BACK 終了</string>
+    <string name="player_pause_hint_touch">タップ 再生/一時停止 · スワイプ ◀ ▶ シーン · スワイプ ▲ ▼ マスク · 戻る 終了</string>
     <string name="player_mask_format">マスク：%1$s</string>
 </resources>

@@ -41,6 +41,7 @@ import androidx.tv.material3.Text
 import com.dx.ambient.domain.playback.PlaybackStatus
 import com.dx.ambient.rendering.AmbientStage
 import com.dx.ambient.rendering.R
+import com.dx.ambient.rendering.components.KeepScreenOn
 import com.dx.ambient.rendering.components.PlayerPauseOverlay
 import kotlinx.coroutines.delay
 
@@ -66,6 +67,9 @@ fun PlayerScreen(
     LaunchedEffect(sceneId) {
         viewModel.bind(sceneId)
     }
+
+    // Ambient playback runs for hours without input — never let the device dim/lock here.
+    KeepScreenOn()
 
     BackHandler {
         viewModel.onStop()
@@ -159,17 +163,23 @@ fun PlayerScreen(
                     },
                 ) { _, dragAmount -> dragTotal += dragAmount }
             }
-            // Swipe up or down collapses the player: stop playback and return to Home,
-            // mirroring the system "dismiss" gesture instead of leaving the video stuck.
+            // Vertical swipes mirror the remote's ▲ ▼ live mask tuning, so every player
+            // control exists on touch too; leaving the player stays on BACK everywhere.
             .pointerInput(Unit) {
                 var dragTotal = 0f
                 detectVerticalDragGestures(
                     onDragStart = { dragTotal = 0f },
                     onDragEnd = {
                         val threshold = 120.dp.toPx()
-                        if (dragTotal <= -threshold || dragTotal >= threshold) {
-                            viewModel.onStop()
-                            onExit()
+                        when {
+                            dragTotal >= threshold -> {
+                                viewModel.cycleMask(1)
+                                overlayVisible = true
+                            }
+                            dragTotal <= -threshold -> {
+                                viewModel.cycleMask(-1)
+                                overlayVisible = true
+                            }
                         }
                     },
                 ) { _, dragAmount -> dragTotal += dragAmount }
@@ -188,7 +198,7 @@ fun PlayerScreen(
                 PlayerPauseOverlay(
                     sceneName = scene.name,
                     maskName = scene.mask.displayName.takeIf { scene.hasMask },
-                    opaque = false,
+                    maskUri = scene.mask.uri.takeIf { scene.hasMask },
                 )
             }
 

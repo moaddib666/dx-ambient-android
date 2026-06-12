@@ -28,7 +28,7 @@
     <string name="onboarding_title">Bem-vindo ao DX Ambient</string>
     <string name="onboarding_line_play">Selecione um cartão de cena com OK para reproduzi-la — sua sala vira a cena.</string>
     <string name="onboarding_line_edit">Pressione Editar na barra superior e depois selecione um cartão para editá-lo (em telas sensíveis ao toque também é possível manter pressionado).</string>
-    <string name="onboarding_line_controls">Durante a reprodução: esquerda/direita troca de cena, OK pausa, BACK ou deslizar para baixo retorna aqui.</string>
+    <string name="onboarding_line_controls">Durante a reprodução: ◀ ▶ ou deslize para o lado para trocar de cena, OK ou toque para pausar, ▲ ▼ ou deslize na vertical para trocar a máscara, BACK volta para cá.</string>
     <string name="onboarding_line_featured">As playlists em destaque são transmitidas pelo YouTube — exigem internet e login no YouTube.</string>
     <string name="onboarding_line_masks">Máscaras emolduram seu vídeo: escolha uma no editor de cenas e visualize ao vivo.</string>
     <string name="onboarding_got_it">Entendi</string>
@@ -171,5 +171,6 @@
 
     <string name="player_paused">Pausado</string>
     <string name="player_pause_hint">OK reproduzir/pausar · ◀ ▶ cena · ▲ ▼ máscara · BACK sair</string>
+    <string name="player_pause_hint_touch">Toque reproduzir/pausar · deslize ◀ ▶ cena · deslize ▲ ▼ máscara · Voltar sair</string>
     <string name="player_mask_format">Máscara: %1$s</string>
 </resources>
